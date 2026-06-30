@@ -10,9 +10,12 @@ use App\Models\Finance;
 use App\Models\Grade;
 use App\Models\Group;
 use App\Models\Professor;
+use App\Models\Permission;
+use App\Models\Role;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\SubjectEnrollment;
+use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -25,6 +28,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $permissions = $this->seedPermissions();
+        $roles = $this->seedRoles($permissions);
+
         $career = Career::create([
             'name' => 'Ingenieria Informatica',
             'abbreviation' => 'INF',
@@ -126,5 +132,129 @@ class DatabaseSeeder extends Seeder
             'evaluated_at' => '2026-12-15',
             'status' => 'published',
         ]);
+
+        $this->seedUsers($roles, $student, $professor);
+    }
+
+    private function seedPermissions()
+    {
+        $permissions = [
+            ['users.manage', 'Gestionar usuarios', 'security'],
+            ['roles.view', 'Consultar roles y permisos', 'security'],
+            ['catalogs.view', 'Consultar catalogos academicos', 'catalogs'],
+            ['catalogs.manage', 'Gestionar catalogos academicos', 'catalogs'],
+            ['curriculum.view', 'Consultar planes de estudio', 'curriculum'],
+            ['curriculum.manage', 'Gestionar planes de estudio', 'curriculum'],
+            ['groups.view', 'Consultar grupos', 'groups'],
+            ['groups.manage', 'Gestionar grupos', 'groups'],
+            ['students.view', 'Consultar estudiantes', 'students'],
+            ['students.manage', 'Gestionar estudiantes', 'students'],
+            ['admissions.manage', 'Gestionar aspirantes y admisiones', 'admissions'],
+            ['enrollments.view', 'Consultar matriculas', 'enrollments'],
+            ['enrollments.create', 'Crear matriculas', 'enrollments'],
+            ['enrollments.manage', 'Gestionar matriculas', 'enrollments'],
+            ['subject_enrollments.view', 'Consultar asignaturas matriculadas', 'academics'],
+            ['subject_enrollments.manage', 'Gestionar asignaturas matriculadas', 'academics'],
+            ['professors.view', 'Consultar profesores', 'professors'],
+            ['professors.manage', 'Gestionar profesores', 'professors'],
+            ['grades.view', 'Consultar calificaciones', 'grades'],
+            ['grades.manage', 'Gestionar calificaciones', 'grades'],
+            ['academic_history.view', 'Consultar historial academico', 'academics'],
+            ['finances.view', 'Consultar finanzas', 'finances'],
+            ['finances.manage', 'Gestionar obligaciones financieras', 'finances'],
+            ['finances.payments.validate', 'Validar pagos', 'finances'],
+            ['reports.academic.view', 'Consultar reportes academicos', 'reports'],
+            ['reports.finance.view', 'Consultar reportes financieros', 'reports'],
+            ['audit.view', 'Consultar auditoria e historial', 'audit'],
+            ['support.impersonate', 'Soporte tecnico controlado', 'support'],
+        ];
+
+        return collect($permissions)->mapWithKeys(fn (array $permission) => [
+            $permission[0] => Permission::create([
+                'code' => $permission[0],
+                'name' => $permission[1],
+                'module' => $permission[2],
+            ]),
+        ]);
+    }
+
+    private function seedRoles($permissions)
+    {
+        $rolePermissions = [
+            'super_admin' => $permissions->keys()->all(),
+            'rector' => ['catalogs.view', 'curriculum.view', 'students.view', 'enrollments.view', 'finances.view', 'reports.academic.view', 'reports.finance.view', 'audit.view'],
+            'institution_admin' => ['users.manage', 'roles.view', 'catalogs.manage', 'curriculum.manage', 'groups.manage', 'students.manage', 'professors.manage', 'reports.academic.view', 'audit.view'],
+            'academic_secretary' => ['catalogs.view', 'curriculum.view', 'groups.view', 'students.manage', 'enrollments.manage', 'subject_enrollments.manage', 'academic_history.view', 'reports.academic.view'],
+            'registrar' => ['students.manage', 'enrollments.manage', 'academic_history.view', 'grades.view', 'reports.academic.view', 'audit.view'],
+            'admissions_officer' => ['students.manage', 'admissions.manage', 'catalogs.view', 'groups.view'],
+            'finance_manager' => ['students.view', 'enrollments.view', 'finances.manage', 'finances.payments.validate', 'reports.finance.view', 'audit.view'],
+            'cashier' => ['students.view', 'finances.view', 'finances.payments.validate'],
+            'academic_coordinator' => ['catalogs.view', 'curriculum.manage', 'groups.manage', 'students.view', 'subject_enrollments.manage', 'grades.view', 'reports.academic.view'],
+            'career_director' => ['curriculum.manage', 'groups.view', 'students.view', 'professors.view', 'grades.view', 'academic_history.view', 'reports.academic.view'],
+            'department_head' => ['professors.manage', 'catalogs.view', 'grades.view', 'reports.academic.view'],
+            'professor' => ['students.view', 'subject_enrollments.view', 'grades.manage', 'academic_history.view'],
+            'student' => ['academic_history.view', 'finances.view', 'enrollments.view', 'grades.view'],
+            'auditor' => ['catalogs.view', 'students.view', 'enrollments.view', 'finances.view', 'grades.view', 'reports.academic.view', 'reports.finance.view', 'audit.view'],
+            'support' => ['roles.view', 'audit.view', 'support.impersonate'],
+            'reports_analyst' => ['reports.academic.view', 'reports.finance.view', 'students.view', 'finances.view', 'grades.view'],
+            'lms_coordinator' => ['catalogs.view', 'curriculum.view', 'groups.view', 'professors.view', 'subject_enrollments.view'],
+        ];
+
+        $names = [
+            'super_admin' => 'Super administrador',
+            'rector' => 'Rector / Director general',
+            'institution_admin' => 'Administrador institucional',
+            'academic_secretary' => 'Secretaria academica',
+            'registrar' => 'Registro academico',
+            'admissions_officer' => 'Admisiones',
+            'finance_manager' => 'Director financiero',
+            'cashier' => 'Caja / Tesoreria',
+            'academic_coordinator' => 'Coordinador academico',
+            'career_director' => 'Director de carrera',
+            'department_head' => 'Jefe de departamento',
+            'professor' => 'Profesor',
+            'student' => 'Estudiante',
+            'auditor' => 'Auditor',
+            'support' => 'Soporte tecnico',
+            'reports_analyst' => 'Analista de reportes',
+            'lms_coordinator' => 'Coordinador LMS / virtualidad',
+        ];
+
+        return collect($rolePermissions)->mapWithKeys(function (array $permissionCodes, string $roleCode) use ($permissions, $names) {
+            $role = Role::create([
+                'code' => $roleCode,
+                'name' => $names[$roleCode],
+                'description' => 'Rol institucional para '.$names[$roleCode].'.',
+                'is_system' => true,
+            ]);
+
+            $role->permissions()->sync($permissions->only($permissionCodes)->pluck('id'));
+
+            return [$roleCode => $role];
+        });
+    }
+
+    private function seedUsers($roles, Student $student, Professor $professor): void
+    {
+        $users = [
+            ['Sistema Admin', 'admin@example.edu', ['super_admin'], null, null],
+            ['Secretaria Academica', 'secretaria@example.edu', ['academic_secretary'], null, null],
+            ['Finanzas', 'finanzas@example.edu', ['finance_manager'], null, null],
+            ['Profesor Demo', 'profesor@example.edu', ['professor'], null, $professor->id],
+            ['Estudiante Demo', 'estudiante@example.edu', ['student'], $student->id, null],
+        ];
+
+        foreach ($users as [$name, $email, $roleCodes, $studentId, $professorId]) {
+            $user = User::create([
+                'name' => $name,
+                'email' => $email,
+                'password' => 'password',
+                'status' => 'active',
+                'student_id' => $studentId,
+                'professor_id' => $professorId,
+            ]);
+
+            $user->roles()->sync(collect($roleCodes)->map(fn (string $code) => $roles[$code]->id));
+        }
     }
 }

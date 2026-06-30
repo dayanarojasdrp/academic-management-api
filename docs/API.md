@@ -8,6 +8,14 @@ http://127.0.0.1:8000/api
 
 Todas las rutas devuelven JSON. Los listados CRUD usan paginacion de Laravel.
 
+Excepto `/api/health` y `/api/auth/login`, las rutas requieren:
+
+```text
+Authorization: Bearer {access_token}
+```
+
+La guia de roles, permisos y usuarios esta en [AUTHORIZATION.md](AUTHORIZATION.md).
+
 ## Regla principal de matricula
 
 Un estudiante no se puede matricular si antes no tiene un pago de matricula validado.
