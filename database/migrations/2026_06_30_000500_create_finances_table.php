@@ -21,6 +21,10 @@ return new class extends Migration
             $table->date('paid_at')->nullable();
             $table->string('status', 30)->default('pending');
             $table->timestamps();
+
+            $table->index(['student_id', 'concept', 'status']);
+            $table->index(['enrollment_id', 'status']);
+            $table->index(['due_date', 'status']);
         });
     }
 

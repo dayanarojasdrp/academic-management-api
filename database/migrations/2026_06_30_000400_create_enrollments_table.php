@@ -17,6 +17,9 @@ return new class extends Migration
             $table->string('status', 30)->default('active');
             $table->text('notes')->nullable();
             $table->timestamps();
+
+            $table->index(['student_id', 'status']);
+            $table->index(['start_course_id', 'status']);
         });
     }
 

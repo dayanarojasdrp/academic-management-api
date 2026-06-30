@@ -18,6 +18,9 @@ return new class extends Migration
             $table->string('phone')->nullable();
             $table->string('status', 30)->default('active');
             $table->timestamps();
+
+            $table->index(['subject_id', 'status']);
+            $table->index(['last_name', 'first_name']);
         });
     }
 

@@ -18,6 +18,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['course_id', 'career_id', 'name']);
+            $table->index(['career_id', 'course_id', 'status']);
         });
     }
 

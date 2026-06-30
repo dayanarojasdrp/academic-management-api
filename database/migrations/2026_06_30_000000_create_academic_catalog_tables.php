@@ -32,6 +32,8 @@ return new class extends Migration
             $table->unsignedSmallInteger('credits')->default(0);
             $table->unsignedSmallInteger('weekly_hours')->nullable();
             $table->timestamps();
+
+            $table->index('name');
         });
     }
 

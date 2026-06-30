@@ -22,6 +22,9 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['student_id', 'subject_id', 'evaluation_type']);
+            $table->index(['subject_enrollment_id', 'status']);
+            $table->index(['student_id', 'status']);
+            $table->index(['professor_id', 'evaluated_at']);
         });
     }
 

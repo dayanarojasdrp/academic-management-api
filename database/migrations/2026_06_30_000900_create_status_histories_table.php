@@ -17,6 +17,9 @@ return new class extends Migration
             $table->json('metadata')->nullable();
             $table->timestamp('changed_at')->useCurrent();
             $table->timestamps();
+
+            $table->index(['trackable_type', 'trackable_id', 'changed_at']);
+            $table->index(['new_status', 'changed_at']);
         });
     }
 

@@ -18,6 +18,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['career_id', 'name', 'version']);
+            $table->index(['career_id', 'status']);
         });
 
         Schema::create('curriculum_plan_subject', function (Blueprint $table) {
@@ -29,6 +30,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['curriculum_plan_id', 'subject_id']);
+            $table->index(['subject_id', 'semester']);
         });
     }
 
