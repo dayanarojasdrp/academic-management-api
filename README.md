@@ -50,6 +50,7 @@ Todos los recursos tienen operaciones REST: `GET`, `POST`, `GET /{id}`, `PUT/PAT
 ```
 
 La guia completa para frontend esta en [docs/API.md](docs/API.md).
+Las decisiones de arquitectura y rendimiento estan en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Ejemplo rapido
 
