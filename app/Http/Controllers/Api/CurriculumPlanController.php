@@ -1,0 +1,49 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Models\CurriculumPlan;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
+
+class CurriculumPlanController extends ApiController
+{
+    protected string $modelClass = CurriculumPlan::class;
+
+    protected array $relations = ['career', 'subjects'];
+
+    public function show(CurriculumPlan $curriculumPlan) { return $this->showRecord($curriculumPlan); }
+    public function update(Request $request, CurriculumPlan $curriculumPlan) { return $this->updateRecord($request, $curriculumPlan); }
+    public function destroy(CurriculumPlan $curriculumPlan) { return $this->destroyRecord($curriculumPlan); }
+
+    protected function rules(?Model $record = null): array
+    {
+        return [
+            'career_id' => ['required', 'exists:careers,id'],
+            'name' => ['required', 'string', 'max:255'],
+            'version' => ['nullable', 'string', 'max:30'],
+            'duration_semesters' => ['nullable', 'integer', 'min:1', 'max:20'],
+            'status' => ['nullable', 'string', 'max:30'],
+            'subjects' => ['nullable', 'array'],
+            'subjects.*.id' => ['required_with:subjects', 'exists:subjects,id'],
+            'subjects.*.semester' => ['nullable', 'integer', 'min:1', 'max:20'],
+            'subjects.*.is_required' => ['nullable', 'boolean'],
+        ];
+    }
+
+    protected function afterSave(Model $record, Request $request): void
+    {
+        if (! $request->has('subjects')) {
+            return;
+        }
+
+        $subjects = collect($request->input('subjects', []))->mapWithKeys(fn (array $subject) => [
+            $subject['id'] => [
+                'semester' => $subject['semester'] ?? null,
+                'is_required' => $subject['is_required'] ?? true,
+            ],
+        ]);
+
+        $record->subjects()->sync($subjects);
+    }
+}
