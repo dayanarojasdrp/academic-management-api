@@ -1,0 +1,70 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Models\Student;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+
+class StudentController extends ApiController
+{
+    protected string $modelClass = Student::class;
+
+    protected array $relations = ['group.career', 'group.course', 'currentEnrollment', 'enrollments'];
+
+    public function show(Student $student) { return $this->showRecord($student); }
+    public function update(Request $request, Student $student) { return $this->updateRecord($request, $student); }
+    public function destroy(Student $student) { return $this->destroyRecord($student); }
+
+    protected function rules(?Model $record = null): array
+    {
+        return [
+            'group_id' => ['nullable', 'exists:groups,id'],
+            'current_enrollment_id' => ['nullable', 'exists:enrollments,id'],
+            'student_code' => ['required', 'string', 'max:50', Rule::unique('students')->ignore($record?->id)],
+            'first_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'document_type' => ['required', 'string', 'max:30'],
+            'document_number' => ['required', 'string', 'max:80', Rule::unique('students')->ignore($record?->id)],
+            'email' => ['nullable', 'email', 'max:255', Rule::unique('students')->ignore($record?->id)],
+            'phone' => ['nullable', 'string', 'max:50'],
+            'birth_date' => ['nullable', 'date'],
+            'admission_date' => ['nullable', 'date'],
+            'exit_date' => ['nullable', 'date', 'after_or_equal:admission_date'],
+            'exit_reason' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', 'string', 'max:30'],
+        ];
+    }
+
+    public function paymentStatus(Student $student): JsonResponse
+    {
+        $paidEnrollmentPayment = $student->finances()
+            ->where('concept', 'enrollment')
+            ->where('status', 'paid')
+            ->exists();
+
+        return response()->json([
+            'student_id' => $student->id,
+            'can_enroll' => $paidEnrollmentPayment,
+            'required_payment_concept' => 'enrollment',
+            'latest_payments' => $student->finances()->latest('id')->take(10)->get(),
+        ]);
+    }
+
+    public function academicHistory(Student $student): JsonResponse
+    {
+        return response()->json([
+            'student' => $student->load(['group.course', 'group.career', 'currentEnrollment']),
+            'subject_enrollments' => $student->subjectEnrollments()
+                ->with(['subject', 'course', 'career', 'group', 'grades.professor'])
+                ->latest('id')
+                ->get(),
+            'passed_subjects' => $student->subjectEnrollments()
+                ->where('status', 'passed')
+                ->with(['subject', 'course', 'career', 'grades.professor'])
+                ->get(),
+        ]);
+    }
+}
