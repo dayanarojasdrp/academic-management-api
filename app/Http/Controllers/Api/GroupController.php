@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Group;
+use App\Support\ApiQuery;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,13 +20,13 @@ class GroupController extends ApiController
 
     public function students(Group $group): JsonResponse
     {
-        return response()->json(
-            $group->students()
-                ->with(['group.course', 'group.career', 'currentEnrollment'])
-                ->orderBy('last_name')
-                ->orderBy('first_name')
-                ->paginate(50)
-        );
+        $query = $group->students()
+            ->with(['group.course:id,name,start_date,end_date,status', 'group.career:id,name,abbreviation', 'currentEnrollment'])
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->orderBy('id');
+
+        return \App\Http\Resources\StudentResource::collection(ApiQuery::paginate($query, request(), 50))->response();
     }
 
     protected function rules(?Model $record = null): array

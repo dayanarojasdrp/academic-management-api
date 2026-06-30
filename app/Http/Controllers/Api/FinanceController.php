@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\Academic\PaymentVerifier;
+use App\Http\Resources\FinanceResource;
 use App\Models\Finance;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
@@ -17,7 +19,7 @@ class FinanceController extends ApiController
     public function update(Request $request, Finance $finance) { return $this->updateRecord($request, $finance); }
     public function destroy(Finance $finance) { return $this->destroyRecord($finance); }
 
-    public function markPaid(Request $request, Finance $finance): JsonResponse
+    public function markPaid(Request $request, Finance $finance, PaymentVerifier $paymentVerifier): JsonResponse
     {
         $validated = $request->validate([
             'payment_method' => ['required', 'string', 'max:50'],
@@ -27,15 +29,10 @@ class FinanceController extends ApiController
         ]);
 
         $previousStatus = $finance->status;
-        $finance->update([
-            'payment_method' => $validated['payment_method'],
-            'payment_reference' => $validated['payment_reference'],
-            'paid_at' => $validated['paid_at'] ?? now()->toDateString(),
-            'status' => 'paid',
-        ]);
+        $finance = $paymentVerifier->markPaid($finance, $validated);
         $this->recordStatusChange($finance, $previousStatus, 'paid', $request);
 
-        return response()->json($finance->fresh()->load($this->relations));
+        return (new FinanceResource($finance->load($this->relations)))->response();
     }
 
     protected function rules(?Model $record = null): array

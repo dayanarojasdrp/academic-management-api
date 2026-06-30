@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\StatusHistory;
+use App\Support\ApiQuery;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,14 +15,13 @@ abstract class ApiController extends Controller
 
     protected array $relations = [];
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $records = $this->modelClass::query()
             ->with($this->relations)
-            ->latest('id')
-            ->paginate(15);
+            ->orderByDesc('id');
 
-        return response()->json($records);
+        return response()->json(ApiQuery::paginate($records, $request));
     }
 
     public function store(Request $request): JsonResponse

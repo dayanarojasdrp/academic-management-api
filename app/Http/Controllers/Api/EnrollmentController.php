@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\Academic\EnrollStudent;
+use App\Http\Resources\EnrollmentResource;
 use App\Models\Enrollment;
-use App\Models\Student;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 
 class EnrollmentController extends ApiController
 {
@@ -15,27 +15,15 @@ class EnrollmentController extends ApiController
 
     protected array $relations = ['student', 'startCourse', 'endCourse'];
 
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, EnrollStudent $enrollStudent): JsonResponse
     {
         $validated = $request->validate($this->rules());
-        $student = Student::findOrFail($validated['student_id']);
-
-        $hasValidPayment = $student->finances()
-            ->where('concept', 'enrollment')
-            ->where('status', 'paid')
-            ->exists();
-
-        if (! $hasValidPayment) {
-            throw ValidationException::withMessages([
-                'student_id' => 'El estudiante no puede matricularse hasta tener un pago de matricula validado con status paid.',
-            ]);
-        }
-
-        $enrollment = Enrollment::create($validated);
-        $student->update(['current_enrollment_id' => $enrollment->id]);
+        $enrollment = $enrollStudent->handle($validated);
         $this->recordStatusChange($enrollment, null, $enrollment->status, $request);
 
-        return response()->json($enrollment->load($this->relations), 201);
+        return (new EnrollmentResource($enrollment->load($this->relations)))
+            ->response()
+            ->setStatusCode(201);
     }
 
     public function show(Enrollment $enrollment) { return $this->showRecord($enrollment); }

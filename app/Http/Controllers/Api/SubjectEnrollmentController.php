@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Models\Enrollment;
+use App\Actions\Academic\RegisterSubjectEnrollment;
+use App\Http\Resources\SubjectEnrollmentResource;
 use App\Models\SubjectEnrollment;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
@@ -18,15 +19,15 @@ class SubjectEnrollmentController extends ApiController
     public function update(Request $request, SubjectEnrollment $subjectEnrollment) { return $this->updateRecord($request, $subjectEnrollment); }
     public function destroy(SubjectEnrollment $subjectEnrollment) { return $this->destroyRecord($subjectEnrollment); }
 
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, RegisterSubjectEnrollment $registerSubjectEnrollment): JsonResponse
     {
         $validated = $request->validate($this->rules());
-        $enrollment = Enrollment::with('student.group')->findOrFail($validated['enrollment_id']);
-
-        $subjectEnrollment = SubjectEnrollment::create($this->completeEnrollmentData($validated, $enrollment));
+        $subjectEnrollment = $registerSubjectEnrollment->handle($validated);
         $this->recordStatusChange($subjectEnrollment, null, $subjectEnrollment->status, $request);
 
-        return response()->json($subjectEnrollment->load($this->relations), 201);
+        return (new SubjectEnrollmentResource($subjectEnrollment->load($this->relations)))
+            ->response()
+            ->setStatusCode(201);
     }
 
     protected function rules(?Model $record = null): array
@@ -45,27 +46,4 @@ class SubjectEnrollmentController extends ApiController
         ];
     }
 
-    protected function afterSave(Model $record, Request $request): void
-    {
-        $enrollment = Enrollment::with('student.group')->find($record->enrollment_id);
-
-        if (! $enrollment) {
-            return;
-        }
-
-        $record->fill($this->completeEnrollmentData($record->toArray(), $enrollment));
-        $record->saveQuietly();
-    }
-
-    private function completeEnrollmentData(array $data, Enrollment $enrollment): array
-    {
-        return array_merge($data, [
-            'student_id' => $data['student_id'] ?? $enrollment->student_id,
-            'course_id' => $data['course_id'] ?? $enrollment->start_course_id,
-            'career_id' => $data['career_id'] ?? $enrollment->student?->group?->career_id,
-            'group_id' => $data['group_id'] ?? $enrollment->student?->group_id,
-            'enrolled_at' => $data['enrolled_at'] ?? now()->toDateString(),
-            'status' => $data['status'] ?? 'enrolled',
-        ]);
-    }
 }

@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\Academic\PaymentVerifier;
+use App\Http\Resources\StudentResource;
 use App\Models\Student;
+use App\Support\ApiQuery;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,6 +16,23 @@ class StudentController extends ApiController
     protected string $modelClass = Student::class;
 
     protected array $relations = ['group.career', 'group.course', 'currentEnrollment', 'enrollments'];
+
+    public function index(Request $request): JsonResponse
+    {
+        $query = Student::query()
+            ->with(['group:id,name,course_id,career_id', 'currentEnrollment:id,student_id,start_course_id,status'])
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->orderBy('id');
+
+        ApiQuery::applyLike($query, $request, 'search', ['student_code', 'first_name', 'last_name', 'document_number', 'email']);
+        ApiQuery::applyEquals($query, $request, [
+            'status' => 'status',
+            'group_id' => 'group_id',
+        ]);
+
+        return StudentResource::collection(ApiQuery::paginate($query, $request))->response();
+    }
 
     public function show(Student $student) { return $this->showRecord($student); }
     public function update(Request $request, Student $student) { return $this->updateRecord($request, $student); }
@@ -38,16 +58,11 @@ class StudentController extends ApiController
         ];
     }
 
-    public function paymentStatus(Student $student): JsonResponse
+    public function paymentStatus(Student $student, PaymentVerifier $paymentVerifier): JsonResponse
     {
-        $paidEnrollmentPayment = $student->finances()
-            ->where('concept', 'enrollment')
-            ->where('status', 'paid')
-            ->exists();
-
         return response()->json([
             'student_id' => $student->id,
-            'can_enroll' => $paidEnrollmentPayment,
+            'can_enroll' => $paymentVerifier->studentCanEnroll($student),
             'required_payment_concept' => 'enrollment',
             'latest_payments' => $student->finances()->latest('id')->take(10)->get(),
         ]);
