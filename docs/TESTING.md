@@ -34,8 +34,21 @@ php artisan test --testsuite=Feature
 
 The test environment uses SQLite in memory through `phpunit.xml`.
 
+## Migration Verification
+
+Production dependencies were installed locally with Composer, generating `vendor/autoload.php` and allowing Laravel to boot.
+
+The database bootstrap has been verified with a temporary SQLite database:
+
+```bash
+APP_ENV=testing DB_CONNECTION=sqlite DB_DATABASE=/tmp/academic-management-verify.sqlite php artisan migrate:fresh --seed --force
+APP_ENV=testing DB_CONNECTION=sqlite DB_DATABASE=/tmp/academic-management-verify.sqlite php artisan route:list --path=api
+```
+
+The verification currently loads 173 API routes and seeds the baseline academic data, including users, roles, permissions, one institution, one student, one enrollment, one subject offering and one grade sheet.
+
 ## Current Local Blocker
 
-The tests are written, but local execution requires a complete Composer install. In the current environment, dependency installation timed out while downloading/cloning Laravel packages from GitHub, so `vendor/autoload.php` was not generated.
+Feature tests require the dev dependencies from Composer, especially PHPUnit and Laravel's testing tooling. If the local install was made with `--no-dev`, run a full `composer install` before executing `php artisan test --testsuite=Feature`.
 
-Once Composer completes, the suite should be executed immediately because it may reveal migration/runtime issues that syntax checks cannot catch.
+In this local verification, production dependencies installed correctly, but the full dev dependency install stalled while downloading `laravel/pint`; therefore `php artisan test` is still unavailable in this machine until Composer completes the dev install.
