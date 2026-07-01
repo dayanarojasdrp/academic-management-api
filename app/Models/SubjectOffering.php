@@ -66,4 +66,9 @@ class SubjectOffering extends Model
     {
         return $this->hasMany(GradeSheet::class);
     }
+
+    public function classSessions(): HasMany
+    {
+        return $this->hasMany(ClassSession::class);
+    }
 }
