@@ -12,7 +12,7 @@ API REST en Laravel para una aplicacion de gestion academica de una institucion 
 - Profesores: codigo unico, nombres, apellidos y asignatura principal.
 - Planes de estudio: carrera, version, duracion y asignaturas requeridas por semestre.
 - Grupos: curso, carrera, nombre, turno y estado.
-- Calificaciones: estudiante, asignatura, profesor, valor, tipo de evaluacion y estado.
+- Calificaciones: escala institucional, componentes, actas, firma, cierre academico, intentos y cambios autorizados.
 - Asignaturas: tabla de apoyo para profesores, planes de estudio y calificaciones.
 
 ## Instalacion
@@ -46,6 +46,10 @@ Todos los recursos tienen operaciones REST: `GET`, `POST`, `GET /{id}`, `PUT/PAT
 /api/finances
 /api/professors
 /api/subject-enrollments
+/api/grading-scales
+/api/grade-components
+/api/grade-sheets
+/api/grade-change-requests
 /api/grades
 ```
 
@@ -54,6 +58,7 @@ Las decisiones de arquitectura y rendimiento estan en [docs/ARCHITECTURE.md](doc
 La autenticacion, roles y permisos estan en [docs/AUTHORIZATION.md](docs/AUTHORIZATION.md).
 El flujo financiero de produccion esta en [docs/FINANCE.md](docs/FINANCE.md).
 La validacion de ofertas y matricula de asignaturas esta en [docs/SUBJECT_ENROLLMENT.md](docs/SUBJECT_ENROLLMENT.md).
+El flujo de calificaciones, actas y cierre academico esta en [docs/GRADEBOOK.md](docs/GRADEBOOK.md).
 
 ## Ejemplo rapido
 

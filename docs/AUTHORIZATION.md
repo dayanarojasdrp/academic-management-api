@@ -179,6 +179,10 @@ professors.view
 professors.manage
 grades.view
 grades.manage
+grades.configure
+grades.sign
+grades.close
+grades.change.approve
 academic_history.view
 finances.view
 finances.manage

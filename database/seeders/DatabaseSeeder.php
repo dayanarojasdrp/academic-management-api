@@ -9,7 +9,11 @@ use App\Models\Enrollment;
 use App\Models\Finance;
 use App\Models\FinancialConcept;
 use App\Models\Grade;
+use App\Models\GradeComponent;
+use App\Models\GradeSheet;
 use App\Models\Group;
+use App\Models\GradingScale;
+use App\Models\GradingScaleLevel;
 use App\Models\PaymentAllocation;
 use App\Models\PaymentReceipt;
 use App\Models\Professor;
@@ -102,6 +106,49 @@ class DatabaseSeeder extends Seeder
             'classroom' => 'Lab 1',
         ]);
 
+        $scale = GradingScale::create([
+            'code' => 'LATAM-100',
+            'name' => 'Escala institucional 0-100',
+            'min_value' => 0,
+            'max_value' => 100,
+            'passing_value' => 60,
+            'decimal_places' => 2,
+            'is_default' => true,
+            'status' => 'active',
+            'description' => 'Escala numerica general para instituciones de educacion superior latinoamericanas.',
+        ]);
+
+        collect([
+            ['F', 'Reprobado', 0, 59.99, 0, false, 1],
+            ['D', 'Suficiente', 60, 69.99, 1, true, 2],
+            ['C', 'Bueno', 70, 79.99, 2, true, 3],
+            ['B', 'Muy bueno', 80, 89.99, 3, true, 4],
+            ['A', 'Excelente', 90, 100, 4, true, 5],
+        ])->each(fn (array $level) => GradingScaleLevel::create([
+            'grading_scale_id' => $scale->id,
+            'code' => $level[0],
+            'label' => $level[1],
+            'min_value' => $level[2],
+            'max_value' => $level[3],
+            'grade_points' => $level[4],
+            'is_passing' => $level[5],
+            'sort_order' => $level[6],
+        ]));
+
+        $finalComponent = GradeComponent::create([
+            'subject_offering_id' => $offering->id,
+            'code' => 'FINAL',
+            'name' => 'Evaluacion final',
+            'type' => 'final',
+            'term' => 'final',
+            'weight' => 100,
+            'max_score' => 100,
+            'is_required' => true,
+            'due_date' => '2026-12-15',
+            'status' => 'active',
+            'sort_order' => 1,
+        ]);
+
         $student = Student::create([
             'group_id' => $group->id,
             'student_code' => 'EST-0001',
@@ -121,6 +168,20 @@ class DatabaseSeeder extends Seeder
             'last_name' => 'Rodriguez',
             'email' => 'carlos.rodriguez@example.edu',
             'status' => 'active',
+        ]);
+
+        $gradeSheet = GradeSheet::create([
+            'subject_offering_id' => $offering->id,
+            'professor_id' => $professor->id,
+            'grading_scale_id' => $scale->id,
+            'course_id' => $course->id,
+            'career_id' => $career->id,
+            'group_id' => $group->id,
+            'subject_id' => $subjects->last()->id,
+            'sheet_type' => 'ordinary',
+            'call_number' => 1,
+            'status' => 'draft',
+            'opened_at' => '2026-12-01',
         ]);
 
         $enrollmentConcept = FinancialConcept::create([
@@ -214,9 +275,20 @@ class DatabaseSeeder extends Seeder
             'student_id' => $student->id,
             'subject_id' => $subjects->last()->id,
             'professor_id' => $professor->id,
+            'grade_sheet_id' => $gradeSheet->id,
+            'grade_component_id' => $finalComponent->id,
+            'grading_scale_id' => $scale->id,
+            'grading_scale_level_id' => $scale->levels()->where('code', 'A')->value('id'),
             'value' => 95,
+            'raw_value' => 95,
+            'normalized_value' => 95,
+            'weight' => 100,
             'evaluation_type' => 'final',
+            'attempt_type' => 'ordinary',
+            'call_number' => 1,
+            'is_final' => true,
             'evaluated_at' => '2026-12-15',
+            'published_at' => '2026-12-15 10:00:00',
             'status' => 'published',
         ]);
 
@@ -246,6 +318,10 @@ class DatabaseSeeder extends Seeder
             ['professors.manage', 'Gestionar profesores', 'professors'],
             ['grades.view', 'Consultar calificaciones', 'grades'],
             ['grades.manage', 'Gestionar calificaciones', 'grades'],
+            ['grades.configure', 'Configurar escalas y componentes de evaluacion', 'grades'],
+            ['grades.sign', 'Firmar actas de calificaciones', 'grades'],
+            ['grades.close', 'Cerrar actas academicas', 'grades'],
+            ['grades.change.approve', 'Aprobar cambios de calificaciones cerradas', 'grades'],
             ['academic_history.view', 'Consultar historial academico', 'academics'],
             ['finances.view', 'Consultar finanzas', 'finances'],
             ['finances.manage', 'Gestionar obligaciones financieras', 'finances'],
@@ -271,15 +347,15 @@ class DatabaseSeeder extends Seeder
             'super_admin' => $permissions->keys()->all(),
             'rector' => ['catalogs.view', 'curriculum.view', 'students.view', 'enrollments.view', 'finances.view', 'reports.academic.view', 'reports.finance.view', 'audit.view'],
             'institution_admin' => ['users.manage', 'roles.view', 'catalogs.manage', 'curriculum.manage', 'groups.manage', 'students.manage', 'professors.manage', 'reports.academic.view', 'audit.view'],
-            'academic_secretary' => ['catalogs.view', 'curriculum.view', 'groups.view', 'students.manage', 'enrollments.manage', 'subject_enrollments.manage', 'academic_history.view', 'reports.academic.view'],
-            'registrar' => ['students.manage', 'enrollments.manage', 'academic_history.view', 'grades.view', 'reports.academic.view', 'audit.view'],
+            'academic_secretary' => ['catalogs.view', 'curriculum.view', 'groups.view', 'students.manage', 'enrollments.manage', 'subject_enrollments.manage', 'grades.view', 'academic_history.view', 'reports.academic.view'],
+            'registrar' => ['students.manage', 'enrollments.manage', 'academic_history.view', 'grades.view', 'grades.close', 'grades.change.approve', 'reports.academic.view', 'audit.view'],
             'admissions_officer' => ['students.manage', 'admissions.manage', 'catalogs.view', 'groups.view'],
             'finance_manager' => ['students.view', 'enrollments.view', 'finances.manage', 'finances.payments.validate', 'reports.finance.view', 'audit.view'],
             'cashier' => ['students.view', 'finances.view', 'finances.payments.validate'],
-            'academic_coordinator' => ['catalogs.view', 'curriculum.manage', 'groups.manage', 'students.view', 'subject_enrollments.manage', 'grades.view', 'reports.academic.view'],
-            'career_director' => ['curriculum.manage', 'groups.view', 'students.view', 'professors.view', 'grades.view', 'academic_history.view', 'reports.academic.view'],
-            'department_head' => ['professors.manage', 'catalogs.view', 'grades.view', 'reports.academic.view'],
-            'professor' => ['students.view', 'subject_enrollments.view', 'grades.manage', 'academic_history.view'],
+            'academic_coordinator' => ['catalogs.view', 'curriculum.manage', 'groups.manage', 'students.view', 'subject_enrollments.manage', 'grades.configure', 'grades.view', 'grades.close', 'reports.academic.view'],
+            'career_director' => ['curriculum.manage', 'groups.view', 'students.view', 'professors.view', 'grades.view', 'grades.sign', 'grades.change.approve', 'academic_history.view', 'reports.academic.view'],
+            'department_head' => ['professors.manage', 'catalogs.view', 'grades.view', 'grades.sign', 'reports.academic.view'],
+            'professor' => ['students.view', 'subject_enrollments.view', 'grades.manage', 'grades.sign', 'academic_history.view'],
             'student' => ['academic_history.view', 'finances.view', 'enrollments.view', 'grades.view'],
             'auditor' => ['catalogs.view', 'students.view', 'enrollments.view', 'finances.view', 'grades.view', 'reports.academic.view', 'reports.finance.view', 'audit.view'],
             'support' => ['roles.view', 'audit.view', 'support.impersonate'],

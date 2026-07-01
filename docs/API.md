@@ -509,30 +509,79 @@ Por ahora cada profesor tiene una asignatura principal. Mas adelante se puede ag
 
 ## Calificaciones
 
-Ruta CRUD: `/api/grades`
+Rutas principales:
+
+```text
+/api/grading-scales
+/api/grading-scale-levels
+/api/grade-components
+/api/grade-sheets
+/api/grade-change-requests
+/api/grades
+```
+
+Acciones de acta:
+
+```text
+POST /api/grade-sheets/{gradeSheet}/submit
+POST /api/grade-sheets/{gradeSheet}/sign
+POST /api/grade-sheets/{gradeSheet}/close
+```
+
+Acciones de cambio autorizado:
+
+```text
+POST /api/grade-change-requests/{gradeChangeRequest}/approve
+POST /api/grade-change-requests/{gradeChangeRequest}/reject
+```
+
+Ruta CRUD de notas: `/api/grades`
 
 Campos:
 
 ```json
 {
   "subject_enrollment_id": 1,
-  "student_id": 1,
-  "subject_id": 2,
-  "professor_id": 1,
-  "value": 95,
-  "evaluation_type": "final",
+  "grade_sheet_id": 1,
+  "grade_component_id": 1,
+  "raw_value": 95,
+  "attempt_type": "ordinary",
+  "call_number": 1,
+  "partial_number": null,
+  "is_final": true,
   "evaluated_at": "2026-12-15",
   "status": "published",
   "notes": "Excelente desempeno"
 }
 ```
 
-Cuando una nota queda `published` y tiene `subject_enrollment_id`, la API actualiza la matricula de asignatura:
+La API deriva desde `subject_enrollment_id`, `grade_component_id` y `grade_sheet_id`:
 
-- `value >= 60`: `subject_enrollments.status = "passed"`.
-- `value < 60`: `subject_enrollments.status = "failed"`.
+- `student_id`
+- `subject_id`
+- `professor_id`
+- escala de calificacion
+- nivel de escala
+- `value` normalizado
+- peso del componente
+
+Cuando una nota final queda `published`, la API actualiza la matricula de asignatura:
+
+- `value >= passing_value` de la escala: `subject_enrollments.status = "passed"`.
+- `value < passing_value` de la escala: `subject_enrollments.status = "failed"`.
 
 Asi queda constancia de que el estudiante curso la asignatura, con que profesor y con que nota.
+
+Filtros utiles:
+
+```text
+GET /api/grades?grade_sheet_id=1
+GET /api/grades?subject_enrollment_id=1
+GET /api/grades?student_id=1&status=published
+GET /api/grades?professor_id=1&attempt_type=ordinary&call_number=1
+```
+
+El flujo completo de escalas, componentes, actas, firma, cierre y cambios autorizados esta en [GRADEBOOK.md](GRADEBOOK.md).
 
 ## Historial de estados
 
