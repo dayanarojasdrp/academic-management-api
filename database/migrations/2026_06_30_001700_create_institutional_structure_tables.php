@@ -105,6 +105,10 @@ return new class extends Migration
         });
 
         Schema::table('groups', function (Blueprint $table) {
+            $table->index('course_id', 'groups_course_id_fk_index');
+        });
+
+        Schema::table('groups', function (Blueprint $table) {
             $table->dropUnique('groups_course_id_career_id_name_unique');
             $table->foreignId('institution_id')->nullable()->after('id')->constrained()->nullOnDelete();
             $table->foreignId('campus_id')->nullable()->after('institution_id')->constrained()->nullOnDelete();
@@ -176,6 +180,7 @@ return new class extends Migration
 
         Schema::table('groups', function (Blueprint $table) {
             $table->dropUnique('groups_institution_campus_course_career_name_unique');
+            $table->dropIndex('groups_course_id_fk_index');
             $table->dropConstrainedForeignId('modality_id');
             $table->dropConstrainedForeignId('department_id');
             $table->dropConstrainedForeignId('faculty_id');

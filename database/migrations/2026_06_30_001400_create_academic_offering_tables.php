@@ -32,7 +32,10 @@ return new class extends Migration
             $table->unsignedSmallInteger('minimum_grade')->default(60);
             $table->timestamps();
 
-            $table->unique(['curriculum_plan_id', 'subject_id', 'prerequisite_subject_id']);
+            $table->unique(
+                ['curriculum_plan_id', 'subject_id', 'prerequisite_subject_id'],
+                'subject_prerequisites_plan_subject_unique'
+            );
         });
 
         Schema::create('subject_offerings', function (Blueprint $table) {
