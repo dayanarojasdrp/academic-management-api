@@ -13,7 +13,7 @@ class CareerController extends ApiController
 {
     protected string $modelClass = Career::class;
 
-    protected array $relations = ['curriculumPlans', 'groups'];
+    protected array $relations = ['institution', 'faculty', 'department', 'modality', 'curriculumPlans', 'groups'];
 
     public function show(Career $career)
     {
@@ -53,9 +53,29 @@ class CareerController extends ApiController
 
     protected function rules(?Model $record = null): array
     {
+        $institutionId = request('institution_id', $record?->institution_id);
+
         return [
-            'name' => ['required', 'string', 'max:255', Rule::unique('careers')->ignore($record?->id)],
-            'abbreviation' => ['required', 'string', 'max:20', Rule::unique('careers')->ignore($record?->id)],
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('careers')
+                    ->where(fn ($query) => $query->where('institution_id', $institutionId))
+                    ->ignore($record?->id),
+            ],
+            'abbreviation' => [
+                'required',
+                'string',
+                'max:20',
+                Rule::unique('careers')
+                    ->where(fn ($query) => $query->where('institution_id', $institutionId))
+                    ->ignore($record?->id),
+            ],
+            'institution_id' => ['nullable', 'exists:institutions,id'],
+            'faculty_id' => ['nullable', 'exists:faculties,id'],
+            'department_id' => ['nullable', 'exists:departments,id'],
+            'modality_id' => ['nullable', 'exists:modalities,id'],
             'description' => ['nullable', 'string'],
         ];
     }

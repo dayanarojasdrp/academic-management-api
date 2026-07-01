@@ -10,7 +10,7 @@ class SubjectOfferingController extends ApiController
 {
     protected string $modelClass = SubjectOffering::class;
 
-    protected array $relations = ['course', 'career', 'group', 'curriculumPlan', 'subject', 'professor', 'schedules'];
+    protected array $relations = ['institution', 'campus', 'faculty', 'department', 'modalityCatalog', 'course', 'career', 'group', 'curriculumPlan', 'subject', 'professor', 'schedules'];
 
     public function show(SubjectOffering $subjectOffering) { return $this->showRecord($subjectOffering); }
     public function update(Request $request, SubjectOffering $subjectOffering) { return $this->updateRecord($request, $subjectOffering); }
@@ -21,6 +21,11 @@ class SubjectOfferingController extends ApiController
         return [
             'course_id' => ['required', 'exists:courses,id'],
             'career_id' => ['required', 'exists:careers,id'],
+            'institution_id' => ['nullable', 'exists:institutions,id'],
+            'campus_id' => ['nullable', 'exists:campuses,id'],
+            'faculty_id' => ['nullable', 'exists:faculties,id'],
+            'department_id' => ['nullable', 'exists:departments,id'],
+            'modality_id' => ['nullable', 'exists:modalities,id'],
             'group_id' => ['nullable', 'exists:groups,id'],
             'curriculum_plan_id' => ['required', 'exists:curriculum_plans,id'],
             'subject_id' => ['required', 'exists:subjects,id'],

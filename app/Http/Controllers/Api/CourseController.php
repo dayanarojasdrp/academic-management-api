@@ -12,7 +12,7 @@ class CourseController extends ApiController
 {
     protected string $modelClass = Course::class;
 
-    protected array $relations = ['groups'];
+    protected array $relations = ['institution', 'campus', 'groups'];
 
     public function show(Course $course) { return $this->showRecord($course); }
     public function update(Request $request, Course $course) { return $this->updateRecord($request, $course); }
@@ -33,6 +33,8 @@ class CourseController extends ApiController
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'institution_id' => ['nullable', 'exists:institutions,id'],
+            'campus_id' => ['nullable', 'exists:campuses,id'],
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'status' => ['nullable', 'string', 'max:30'],
