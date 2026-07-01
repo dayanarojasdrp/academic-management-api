@@ -17,6 +17,7 @@ Authorization: Bearer {access_token}
 La guia de roles, permisos y usuarios esta en [AUTHORIZATION.md](AUTHORIZATION.md).
 La guia financiera de cargos, pagos, becas, descuentos y solvencia esta en [FINANCE.md](FINANCE.md).
 La validacion de matricula de asignaturas esta en [SUBJECT_ENROLLMENT.md](SUBJECT_ENROLLMENT.md).
+Los reportes oficiales estan en [OFFICIAL_REPORTS.md](OFFICIAL_REPORTS.md).
 
 ## Regla principal de matricula
 
@@ -66,6 +67,21 @@ finances
 professors
 subject-enrollments
 grades
+```
+
+Reportes oficiales:
+
+```text
+GET /api/reports/enrollment-by-period
+GET /api/reports/grades-by-group
+GET /api/reports/grade-sheets
+GET /api/reports/students/{student}/certificate
+GET /api/reports/students/{student}/kardex
+GET /api/reports/graduates
+GET /api/reports/withdrawals
+GET /api/reports/retention
+GET /api/reports/faculty-performance
+GET /api/reports/delinquency
 ```
 
 ## Estructura institucional
