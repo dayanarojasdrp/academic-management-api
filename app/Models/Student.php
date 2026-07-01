@@ -50,6 +50,21 @@ class Student extends Model
         return $this->hasMany(Finance::class);
     }
 
+    public function charges(): HasMany
+    {
+        return $this->hasMany(StudentCharge::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(StudentPayment::class);
+    }
+
+    public function financialHolds(): HasMany
+    {
+        return $this->hasMany(FinancialHold::class);
+    }
+
     public function grades(): HasMany
     {
         return $this->hasMany(Grade::class);
