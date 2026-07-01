@@ -14,6 +14,11 @@ class SubjectOffering extends Model
     use HasStatusHistory;
 
     protected $fillable = [
+        'institution_id',
+        'campus_id',
+        'faculty_id',
+        'department_id',
+        'modality_id',
         'course_id',
         'career_id',
         'group_id',
@@ -28,6 +33,12 @@ class SubjectOffering extends Model
         'starts_at',
         'ends_at',
     ];
+
+    public function institution(): BelongsTo { return $this->belongsTo(Institution::class); }
+    public function campus(): BelongsTo { return $this->belongsTo(Campus::class); }
+    public function faculty(): BelongsTo { return $this->belongsTo(Faculty::class); }
+    public function department(): BelongsTo { return $this->belongsTo(Department::class); }
+    public function modalityCatalog(): BelongsTo { return $this->belongsTo(Modality::class, 'modality_id'); }
 
     public function course(): BelongsTo { return $this->belongsTo(Course::class); }
     public function career(): BelongsTo { return $this->belongsTo(Career::class); }

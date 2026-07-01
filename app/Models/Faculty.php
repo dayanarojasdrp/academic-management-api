@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Professor extends Model
+class Faculty extends Model
 {
     use HasFactory;
     use HasStatusHistory;
@@ -16,29 +16,13 @@ class Professor extends Model
     protected $fillable = [
         'institution_id',
         'campus_id',
-        'faculty_id',
-        'department_id',
-        'subject_id',
-        'professor_code',
-        'first_name',
-        'last_name',
-        'email',
-        'phone',
+        'code',
+        'name',
         'status',
     ];
 
     public function institution(): BelongsTo { return $this->belongsTo(Institution::class); }
     public function campus(): BelongsTo { return $this->belongsTo(Campus::class); }
-    public function faculty(): BelongsTo { return $this->belongsTo(Faculty::class); }
-    public function department(): BelongsTo { return $this->belongsTo(Department::class); }
-
-    public function subject(): BelongsTo
-    {
-        return $this->belongsTo(Subject::class);
-    }
-
-    public function grades(): HasMany
-    {
-        return $this->hasMany(Grade::class);
-    }
+    public function departments(): HasMany { return $this->hasMany(Department::class); }
+    public function careers(): HasMany { return $this->hasMany(Career::class); }
 }
