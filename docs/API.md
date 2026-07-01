@@ -204,7 +204,10 @@ Rutas especiales:
 
 ```text
 GET /api/students/{student}/payment-status
+GET /api/students/{student}/academic-summary
 GET /api/students/{student}/academic-history
+GET /api/students/{student}/kardex
+GET /api/students/{student}/grades
 ```
 
 `payment-status` responde si el estudiante puede matricularse:
@@ -218,7 +221,152 @@ GET /api/students/{student}/academic-history
 }
 ```
 
-`academic-history` devuelve estudiante, asignaturas matriculadas, notas, profesores y asignaturas aprobadas.
+### Historial academico paginado
+
+El historial academico esta separado por vistas para evitar respuestas gigantes en produccion.
+
+#### Resumen rapido
+
+```text
+GET /api/students/{student}/academic-summary
+```
+
+Uso recomendado: ficha del estudiante, dashboard, encabezado del expediente.
+
+Respuesta:
+
+```json
+{
+  "student_id": 1,
+  "current_status": "active",
+  "admission_date": "2026-09-01",
+  "exit_date": null,
+  "exit_reason": null,
+  "current_group": {
+    "id": 1,
+    "name": "INF-2026-A",
+    "course": {
+      "id": 1,
+      "name": "2026-2027"
+    },
+    "career": {
+      "id": 1,
+      "name": "Ingenieria Informatica",
+      "abbreviation": "INF"
+    }
+  },
+  "current_enrollment": {
+    "id": 1,
+    "start_course_id": 1,
+    "end_course_id": null,
+    "status": "active"
+  },
+  "subject_totals": {
+    "total": 8,
+    "enrolled": 4,
+    "passed": 3,
+    "failed": 1,
+    "withdrawn": 0
+  },
+  "credits": {
+    "passed": 12,
+    "attempted": 28
+  },
+  "grades": {
+    "published_count": 6,
+    "average": 87.5,
+    "last_evaluated_at": "2026-11-20"
+  }
+}
+```
+
+#### Historial de asignaturas
+
+```text
+GET /api/students/{student}/academic-history
+```
+
+Uso recomendado: pantalla de asignaturas matriculadas/cursadas. Esta ruta ahora es paginada.
+
+Query params:
+
+```text
+per_page=25
+cursor=true
+status=enrolled|passed|failed|withdrawn
+course_id=1
+career_id=1
+group_id=1
+semester=1
+subject_id=1
+curriculum_plan_id=1
+from=2026-09-01
+to=2027-07-30
+```
+
+Cada item incluye asignatura, curso, carrera, grupo, oferta academica y metricas de notas publicadas:
+
+```json
+{
+  "data": [
+    {
+      "id": 10,
+      "student_id": 1,
+      "subject_id": 3,
+      "course_id": 1,
+      "career_id": 1,
+      "group_id": 1,
+      "semester": 1,
+      "status": "passed",
+      "published_grades_count": 2,
+      "published_grade_average": "88.500000",
+      "last_evaluated_at": "2026-11-20",
+      "subject": {
+        "id": 3,
+        "code": "MAT-101",
+        "name": "Matematica I",
+        "credits": 4
+      }
+    }
+  ],
+  "links": {},
+  "meta": {}
+}
+```
+
+#### Kardex oficial
+
+```text
+GET /api/students/{student}/kardex
+```
+
+Uso recomendado: constancia academica, expediente oficial, vista por secretaria/registro. Devuelve solo asignaturas cerradas: `passed`, `failed` y `withdrawn`.
+
+Acepta los mismos filtros de `academic-history`. Cada item incluye plan de estudio, curso, asignatura, estado final, fecha de cierre y nota final promedio de evaluaciones publicadas.
+
+#### Notas del estudiante
+
+```text
+GET /api/students/{student}/grades
+```
+
+Uso recomendado: tabla de evaluaciones, detalle por profesor, frontend de estudiante/profesor.
+
+Query params:
+
+```text
+per_page=25
+cursor=true
+status=draft|published|void
+course_id=1
+subject_id=1
+professor_id=1
+evaluation_type=final
+from=2026-09-01
+to=2026-12-30
+```
+
+Esta ruta devuelve las calificaciones paginadas con asignatura, profesor y la matricula de asignatura relacionada.
 
 ## Finanzas y pago falso/manual
 
