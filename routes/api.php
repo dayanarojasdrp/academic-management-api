@@ -13,7 +13,12 @@ use App\Http\Controllers\Api\Finance\FinancialConceptController;
 use App\Http\Controllers\Api\Finance\FinancialHoldController;
 use App\Http\Controllers\Api\Finance\StudentChargeController;
 use App\Http\Controllers\Api\Finance\StudentPaymentController;
+use App\Http\Controllers\Api\GradeChangeRequestController;
+use App\Http\Controllers\Api\GradeComponentController;
 use App\Http\Controllers\Api\GradeController;
+use App\Http\Controllers\Api\GradeSheetController;
+use App\Http\Controllers\Api\GradingScaleController;
+use App\Http\Controllers\Api\GradingScaleLevelController;
 use App\Http\Controllers\Api\GroupController;
 use App\Http\Controllers\Api\ProfessorController;
 use App\Http\Controllers\Api\StatusHistoryController;
@@ -112,6 +117,42 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::apiResource('subject-offering-schedules', SubjectOfferingScheduleController::class)
         ->parameters(['subject-offering-schedules' => 'subjectOfferingSchedule'])
         ->middleware('permission:subject_enrollments.manage');
+    Route::apiResource('grading-scales', GradingScaleController::class)
+        ->parameters(['grading-scales' => 'gradingScale'])
+        ->only(['index', 'show'])
+        ->middleware('permission:grades.view,grades.manage');
+    Route::apiResource('grading-scales', GradingScaleController::class)
+        ->parameters(['grading-scales' => 'gradingScale'])
+        ->except(['index', 'show'])
+        ->middleware('permission:grades.configure');
+    Route::apiResource('grading-scale-levels', GradingScaleLevelController::class)
+        ->parameters(['grading-scale-levels' => 'gradingScaleLevel'])
+        ->middleware('permission:grades.configure');
+    Route::apiResource('grade-components', GradeComponentController::class)
+        ->parameters(['grade-components' => 'gradeComponent'])
+        ->only(['index', 'show'])
+        ->middleware('permission:grades.view,grades.manage');
+    Route::apiResource('grade-components', GradeComponentController::class)
+        ->parameters(['grade-components' => 'gradeComponent'])
+        ->except(['index', 'show'])
+        ->middleware('permission:grades.configure,grades.manage');
+    Route::post('grade-sheets/{gradeSheet}/submit', [GradeSheetController::class, 'submit'])->middleware('permission:grades.manage');
+    Route::post('grade-sheets/{gradeSheet}/sign', [GradeSheetController::class, 'sign'])->middleware('permission:grades.sign');
+    Route::post('grade-sheets/{gradeSheet}/close', [GradeSheetController::class, 'close'])->middleware('permission:grades.close');
+    Route::apiResource('grade-sheets', GradeSheetController::class)
+        ->parameters(['grade-sheets' => 'gradeSheet'])
+        ->only(['index', 'show'])
+        ->middleware('permission:grades.view,grades.manage');
+    Route::apiResource('grade-sheets', GradeSheetController::class)
+        ->parameters(['grade-sheets' => 'gradeSheet'])
+        ->except(['index', 'show'])
+        ->middleware('permission:grades.manage');
+    Route::post('grade-change-requests/{gradeChangeRequest}/approve', [GradeChangeRequestController::class, 'approve'])->middleware('permission:grades.change.approve');
+    Route::post('grade-change-requests/{gradeChangeRequest}/reject', [GradeChangeRequestController::class, 'reject'])->middleware('permission:grades.change.approve');
+    Route::apiResource('grade-change-requests', GradeChangeRequestController::class)
+        ->parameters(['grade-change-requests' => 'gradeChangeRequest'])
+        ->only(['index', 'show', 'store'])
+        ->middleware('permission:grades.view,grades.manage');
     Route::apiResource('grades', GradeController::class)->only(['index', 'show'])->middleware('permission:grades.view,grades.manage');
     Route::apiResource('grades', GradeController::class)->except(['index', 'show'])->middleware('permission:grades.manage');
     Route::apiResource('status-histories', StatusHistoryController::class)->only(['index', 'show'])->middleware('permission:audit.view');
