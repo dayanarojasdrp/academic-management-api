@@ -3,6 +3,13 @@
 use App\Http\Controllers\Api\Auth\AuthController;
 use App\Http\Controllers\Api\Auth\AuthorizationController;
 use App\Http\Controllers\Api\Auth\UserManagementController;
+use App\Http\Controllers\Api\Admissions\AdmissionDecisionController;
+use App\Http\Controllers\Api\Admissions\AdmissionInterviewController;
+use App\Http\Controllers\Api\Admissions\ApplicantController;
+use App\Http\Controllers\Api\Admissions\ApplicationDocumentController;
+use App\Http\Controllers\Api\Attendance\AttendanceRecordController;
+use App\Http\Controllers\Api\Attendance\AttendanceSummaryController;
+use App\Http\Controllers\Api\Attendance\ClassSessionController;
 use App\Http\Controllers\Api\CampusController;
 use App\Http\Controllers\Api\CareerController;
 use App\Http\Controllers\Api\CourseController;
@@ -28,6 +35,7 @@ use App\Http\Controllers\Api\ModalityController;
 use App\Http\Controllers\Api\ProfessorController;
 use App\Http\Controllers\Api\Reports\AcademicReportController;
 use App\Http\Controllers\Api\Reports\FinanceReportController;
+use App\Http\Controllers\Api\Reports\ReportExportController;
 use App\Http\Controllers\Api\StatusHistoryController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\SubjectEnrollmentController;
@@ -59,6 +67,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('students/{student}/grades', [StudentController::class, 'grades'])->middleware('permission:grades.view,academic_history.view');
     Route::patch('finances/{finance}/mark-paid', [FinanceController::class, 'markPaid'])->middleware('permission:finances.payments.validate');
     Route::post('student-charges/{studentCharge}/adjustments', [StudentChargeController::class, 'adjust'])->middleware('permission:finances.manage');
+    Route::post('applicants/{applicant}/submit', [ApplicantController::class, 'submit'])->middleware('permission:admissions.manage');
+    Route::post('applicants/{applicant}/convert-to-student', [ApplicantController::class, 'convert'])->middleware('permission:admissions.manage,students.manage');
+    Route::post('class-sessions/{classSession}/generate-attendance', [ClassSessionController::class, 'generateRecords'])->middleware('permission:attendance.manage');
+    Route::get('students/{student}/attendance-summary', [AttendanceSummaryController::class, 'student'])->middleware('permission:attendance.view,attendance.manage');
 
     Route::apiResource('careers', CareerController::class)->only(['index', 'show'])->middleware('permission:catalogs.view,catalogs.manage');
     Route::apiResource('careers', CareerController::class)->except(['index', 'show'])->middleware('permission:catalogs.manage');
@@ -82,6 +94,17 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::apiResource('groups', GroupController::class)->except(['index', 'show'])->middleware('permission:groups.manage');
     Route::apiResource('students', StudentController::class)->only(['index', 'show'])->middleware('permission:students.view,students.manage');
     Route::apiResource('students', StudentController::class)->except(['index', 'show'])->middleware('permission:students.manage');
+    Route::apiResource('applicants', ApplicantController::class)->only(['index', 'show'])->middleware('permission:admissions.manage');
+    Route::apiResource('applicants', ApplicantController::class)->except(['index', 'show'])->middleware('permission:admissions.manage');
+    Route::apiResource('application-documents', ApplicationDocumentController::class)
+        ->parameters(['application-documents' => 'applicationDocument'])
+        ->middleware('permission:admissions.manage');
+    Route::apiResource('admission-interviews', AdmissionInterviewController::class)
+        ->parameters(['admission-interviews' => 'admissionInterview'])
+        ->middleware('permission:admissions.manage');
+    Route::apiResource('admission-decisions', AdmissionDecisionController::class)
+        ->parameters(['admission-decisions' => 'admissionDecision'])
+        ->middleware('permission:admissions.manage');
     Route::apiResource('enrollments', EnrollmentController::class)->only(['index', 'show'])->middleware('permission:enrollments.view,enrollments.manage');
     Route::apiResource('enrollments', EnrollmentController::class)->only(['store'])->middleware('permission:enrollments.create,enrollments.manage');
     Route::apiResource('enrollments', EnrollmentController::class)->only(['update', 'destroy'])->middleware('permission:enrollments.manage');
@@ -134,6 +157,22 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::apiResource('subject-offering-schedules', SubjectOfferingScheduleController::class)
         ->parameters(['subject-offering-schedules' => 'subjectOfferingSchedule'])
         ->middleware('permission:subject_enrollments.manage');
+    Route::apiResource('class-sessions', ClassSessionController::class)
+        ->parameters(['class-sessions' => 'classSession'])
+        ->only(['index', 'show'])
+        ->middleware('permission:attendance.view,attendance.manage');
+    Route::apiResource('class-sessions', ClassSessionController::class)
+        ->parameters(['class-sessions' => 'classSession'])
+        ->except(['index', 'show'])
+        ->middleware('permission:attendance.manage');
+    Route::apiResource('attendance-records', AttendanceRecordController::class)
+        ->parameters(['attendance-records' => 'attendanceRecord'])
+        ->only(['index', 'show'])
+        ->middleware('permission:attendance.view,attendance.manage');
+    Route::apiResource('attendance-records', AttendanceRecordController::class)
+        ->parameters(['attendance-records' => 'attendanceRecord'])
+        ->except(['index', 'show'])
+        ->middleware('permission:attendance.manage');
     Route::apiResource('grading-scales', GradingScaleController::class)
         ->parameters(['grading-scales' => 'gradingScale'])
         ->only(['index', 'show'])
@@ -177,12 +216,16 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('grades-by-group', [AcademicReportController::class, 'gradesByGroup'])->middleware('permission:reports.academic.view');
         Route::get('grade-sheets', [AcademicReportController::class, 'gradeSheets'])->middleware('permission:reports.academic.view,grades.view');
         Route::get('students/{student}/certificate', [AcademicReportController::class, 'certificate'])->middleware('permission:reports.academic.view,academic_history.view');
+        Route::get('students/{student}/certificate/export', [ReportExportController::class, 'certificate'])->middleware('permission:reports.academic.view,academic_history.view');
         Route::get('students/{student}/kardex', [AcademicReportController::class, 'kardex'])->middleware('permission:reports.academic.view,academic_history.view');
+        Route::get('students/{student}/kardex/export', [ReportExportController::class, 'kardex'])->middleware('permission:reports.academic.view,academic_history.view');
+        Route::get('grade-sheets/{gradeSheet}/export', [ReportExportController::class, 'gradeSheet'])->middleware('permission:reports.academic.view,grades.view');
         Route::get('graduates', [AcademicReportController::class, 'graduates'])->middleware('permission:reports.academic.view');
         Route::get('withdrawals', [AcademicReportController::class, 'withdrawals'])->middleware('permission:reports.academic.view');
         Route::get('retention', [AcademicReportController::class, 'retention'])->middleware('permission:reports.academic.view');
         Route::get('faculty-performance', [AcademicReportController::class, 'facultyPerformance'])->middleware('permission:reports.academic.view');
         Route::get('delinquency', [FinanceReportController::class, 'delinquency'])->middleware('permission:reports.finance.view,finances.view');
+        Route::get('delinquency/export', [ReportExportController::class, 'delinquency'])->middleware('permission:reports.finance.view,finances.view');
     });
     Route::apiResource('status-histories', StatusHistoryController::class)->only(['index', 'show'])->middleware('permission:audit.view');
 });

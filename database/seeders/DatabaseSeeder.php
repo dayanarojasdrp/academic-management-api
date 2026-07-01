@@ -4,6 +4,12 @@ namespace Database\Seeders;
 
 use App\Models\Career;
 use App\Models\Campus;
+use App\Models\AdmissionDecision;
+use App\Models\AdmissionInterview;
+use App\Models\Applicant;
+use App\Models\ApplicationDocument;
+use App\Models\AttendanceRecord;
+use App\Models\ClassSession;
 use App\Models\Course;
 use App\Models\CurriculumPlan;
 use App\Models\Department;
@@ -361,6 +367,86 @@ class DatabaseSeeder extends Seeder
             'status' => 'published',
         ]);
 
+        $applicant = Applicant::create([
+            'institution_id' => $institution->id,
+            'campus_id' => $campus->id,
+            'career_id' => $career->id,
+            'course_id' => $course->id,
+            'group_id' => $group->id,
+            'applicant_code' => 'ASP-2026-0001',
+            'first_name' => 'Luis',
+            'last_name' => 'Martinez Lopez',
+            'document_type' => 'pasaporte',
+            'document_number' => 'P20260001',
+            'email' => 'luis.martinez@example.edu',
+            'phone' => '+5355500001',
+            'application_date' => '2026-06-15',
+            'source' => 'web',
+            'status' => 'approved',
+            'notes' => 'Aspirante de referencia para el flujo de admisiones.',
+        ]);
+
+        ApplicationDocument::create([
+            'applicant_id' => $applicant->id,
+            'type' => 'identity_document',
+            'name' => 'Documento de identidad',
+            'status' => 'verified',
+            'verified_at' => '2026-06-16 09:00:00',
+        ]);
+
+        ApplicationDocument::create([
+            'applicant_id' => $applicant->id,
+            'type' => 'high_school_transcript',
+            'name' => 'Certificacion de estudios previos',
+            'status' => 'verified',
+            'verified_at' => '2026-06-16 09:15:00',
+        ]);
+
+        AdmissionInterview::create([
+            'applicant_id' => $applicant->id,
+            'scheduled_at' => '2026-06-18 10:00:00',
+            'completed_at' => '2026-06-18 10:30:00',
+            'score' => 88,
+            'result' => 'recommended',
+            'notes' => 'Buen perfil academico y motivacion clara.',
+        ]);
+
+        AdmissionDecision::create([
+            'applicant_id' => $applicant->id,
+            'decision' => 'approved',
+            'decision_date' => '2026-06-20',
+            'valid_until' => '2026-08-31',
+            'score' => 88,
+            'reason' => 'Cumple requisitos documentales y entrevista satisfactoria.',
+            'conditions' => ['financial_clearance_required' => true],
+        ]);
+
+        $classSession = ClassSession::create([
+            'subject_offering_id' => $offering->id,
+            'course_id' => $course->id,
+            'career_id' => $career->id,
+            'group_id' => $group->id,
+            'subject_id' => $subjects->last()->id,
+            'professor_id' => $professor->id,
+            'session_date' => '2026-09-07',
+            'starts_at' => '08:00',
+            'ends_at' => '10:00',
+            'classroom' => 'Lab 1',
+            'topic' => 'Introduccion a algoritmos',
+            'delivery_mode' => 'presencial',
+            'status' => 'completed',
+        ]);
+
+        AttendanceRecord::create([
+            'class_session_id' => $classSession->id,
+            'student_id' => $student->id,
+            'subject_enrollment_id' => $subjectEnrollment->id,
+            'status' => 'present',
+            'minutes_late' => 0,
+            'justified' => false,
+            'recorded_at' => '2026-09-07 08:05:00',
+        ]);
+
         $this->seedUsers($roles, $student, $professor, $institution, $campus);
     }
 
@@ -392,6 +478,8 @@ class DatabaseSeeder extends Seeder
             ['grades.close', 'Cerrar actas academicas', 'grades'],
             ['grades.change.approve', 'Aprobar cambios de calificaciones cerradas', 'grades'],
             ['academic_history.view', 'Consultar historial academico', 'academics'],
+            ['attendance.view', 'Consultar asistencia academica', 'attendance'],
+            ['attendance.manage', 'Gestionar asistencia academica', 'attendance'],
             ['finances.view', 'Consultar finanzas', 'finances'],
             ['finances.manage', 'Gestionar obligaciones financieras', 'finances'],
             ['finances.payments.validate', 'Validar pagos', 'finances'],
@@ -414,21 +502,21 @@ class DatabaseSeeder extends Seeder
     {
         $rolePermissions = [
             'super_admin' => $permissions->keys()->all(),
-            'rector' => ['catalogs.view', 'curriculum.view', 'students.view', 'enrollments.view', 'finances.view', 'reports.academic.view', 'reports.finance.view', 'audit.view'],
+            'rector' => ['catalogs.view', 'curriculum.view', 'students.view', 'enrollments.view', 'attendance.view', 'finances.view', 'reports.academic.view', 'reports.finance.view', 'audit.view'],
             'institution_admin' => ['users.manage', 'roles.view', 'catalogs.manage', 'curriculum.manage', 'groups.manage', 'students.manage', 'professors.manage', 'reports.academic.view', 'audit.view'],
-            'academic_secretary' => ['catalogs.view', 'curriculum.view', 'groups.view', 'students.manage', 'enrollments.manage', 'subject_enrollments.manage', 'grades.view', 'academic_history.view', 'reports.academic.view'],
+            'academic_secretary' => ['catalogs.view', 'curriculum.view', 'groups.view', 'students.manage', 'enrollments.manage', 'subject_enrollments.manage', 'grades.view', 'attendance.view', 'academic_history.view', 'reports.academic.view'],
             'registrar' => ['students.manage', 'enrollments.manage', 'academic_history.view', 'grades.view', 'grades.close', 'grades.change.approve', 'reports.academic.view', 'audit.view'],
-            'admissions_officer' => ['students.manage', 'admissions.manage', 'catalogs.view', 'groups.view'],
+            'admissions_officer' => ['students.manage', 'admissions.manage', 'catalogs.view', 'groups.view', 'reports.academic.view'],
             'finance_manager' => ['students.view', 'enrollments.view', 'finances.manage', 'finances.payments.validate', 'reports.finance.view', 'audit.view'],
             'cashier' => ['students.view', 'finances.view', 'finances.payments.validate'],
-            'academic_coordinator' => ['catalogs.view', 'curriculum.manage', 'groups.manage', 'students.view', 'subject_enrollments.manage', 'grades.configure', 'grades.view', 'grades.close', 'reports.academic.view'],
-            'career_director' => ['curriculum.manage', 'groups.view', 'students.view', 'professors.view', 'grades.view', 'grades.sign', 'grades.change.approve', 'academic_history.view', 'reports.academic.view'],
+            'academic_coordinator' => ['catalogs.view', 'curriculum.manage', 'groups.manage', 'students.view', 'subject_enrollments.manage', 'grades.configure', 'grades.view', 'grades.close', 'attendance.view', 'reports.academic.view'],
+            'career_director' => ['curriculum.manage', 'groups.view', 'students.view', 'professors.view', 'grades.view', 'grades.sign', 'grades.change.approve', 'attendance.view', 'academic_history.view', 'reports.academic.view'],
             'department_head' => ['professors.manage', 'catalogs.view', 'grades.view', 'grades.sign', 'reports.academic.view'],
-            'professor' => ['students.view', 'subject_enrollments.view', 'grades.manage', 'grades.sign', 'academic_history.view'],
-            'student' => ['academic_history.view', 'finances.view', 'enrollments.view', 'grades.view'],
-            'auditor' => ['catalogs.view', 'students.view', 'enrollments.view', 'finances.view', 'grades.view', 'reports.academic.view', 'reports.finance.view', 'audit.view'],
+            'professor' => ['students.view', 'subject_enrollments.view', 'grades.manage', 'grades.sign', 'attendance.manage', 'attendance.view', 'academic_history.view'],
+            'student' => ['academic_history.view', 'attendance.view', 'finances.view', 'enrollments.view', 'grades.view'],
+            'auditor' => ['catalogs.view', 'students.view', 'enrollments.view', 'attendance.view', 'finances.view', 'grades.view', 'reports.academic.view', 'reports.finance.view', 'audit.view'],
             'support' => ['roles.view', 'audit.view', 'support.impersonate'],
-            'reports_analyst' => ['reports.academic.view', 'reports.finance.view', 'students.view', 'finances.view', 'grades.view'],
+            'reports_analyst' => ['reports.academic.view', 'reports.finance.view', 'students.view', 'attendance.view', 'finances.view', 'grades.view'],
             'lms_coordinator' => ['catalogs.view', 'curriculum.view', 'groups.view', 'professors.view', 'subject_enrollments.view'],
         ];
 
