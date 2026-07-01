@@ -15,6 +15,7 @@ Authorization: Bearer {access_token}
 ```
 
 La guia de roles, permisos y usuarios esta en [AUTHORIZATION.md](AUTHORIZATION.md).
+La guia financiera de cargos, pagos, becas, descuentos y solvencia esta en [FINANCE.md](FINANCE.md).
 
 ## Regla principal de matricula
 

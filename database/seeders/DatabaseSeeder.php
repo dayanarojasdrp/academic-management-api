@@ -7,12 +7,17 @@ use App\Models\Course;
 use App\Models\CurriculumPlan;
 use App\Models\Enrollment;
 use App\Models\Finance;
+use App\Models\FinancialConcept;
 use App\Models\Grade;
 use App\Models\Group;
+use App\Models\PaymentAllocation;
+use App\Models\PaymentReceipt;
 use App\Models\Professor;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Student;
+use App\Models\StudentCharge;
+use App\Models\StudentPayment;
 use App\Models\Subject;
 use App\Models\SubjectEnrollment;
 use App\Models\User;
@@ -90,6 +95,55 @@ class DatabaseSeeder extends Seeder
             'status' => 'active',
         ]);
 
+        $enrollmentConcept = FinancialConcept::create([
+            'code' => 'ENROLLMENT_FEE',
+            'name' => 'Derecho de matricula',
+            'type' => 'enrollment',
+            'default_amount' => 250.00,
+            'currency' => 'USD',
+            'is_required_for_enrollment' => true,
+            'is_active' => true,
+            'description' => 'Cargo obligatorio para habilitar la matricula academica.',
+        ]);
+
+        $charge = StudentCharge::create([
+            'student_id' => $student->id,
+            'course_id' => $course->id,
+            'financial_concept_id' => $enrollmentConcept->id,
+            'original_amount' => 250.00,
+            'adjustment_amount' => 0,
+            'paid_amount' => 250.00,
+            'balance_amount' => 0,
+            'currency' => 'USD',
+            'issue_date' => '2026-08-01',
+            'due_date' => '2026-08-30',
+            'status' => 'paid',
+        ]);
+
+        $payment = StudentPayment::create([
+            'student_id' => $student->id,
+            'amount' => 250.00,
+            'unallocated_amount' => 0,
+            'currency' => 'USD',
+            'payment_method' => 'manual',
+            'payment_reference' => 'PAY-LEDGER-DEMO-0001',
+            'paid_at' => '2026-08-25',
+            'status' => 'confirmed',
+        ]);
+
+        PaymentAllocation::create([
+            'student_payment_id' => $payment->id,
+            'student_charge_id' => $charge->id,
+            'amount' => 250.00,
+        ]);
+
+        PaymentReceipt::create([
+            'student_payment_id' => $payment->id,
+            'receipt_number' => 'RCPT-DEMO-0001',
+            'issued_at' => '2026-08-25',
+            'status' => 'issued',
+        ]);
+
         $finance = Finance::create([
             'student_id' => $student->id,
             'amount' => 250.00,
@@ -109,6 +163,8 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $finance->update(['enrollment_id' => $enrollment->id]);
+        $charge->update(['enrollment_id' => $enrollment->id]);
+        $payment->update(['enrollment_id' => $enrollment->id]);
         $student->update(['current_enrollment_id' => $enrollment->id]);
 
         $subjectEnrollment = SubjectEnrollment::create([
