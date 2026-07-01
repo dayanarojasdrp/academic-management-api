@@ -65,6 +65,7 @@ La autenticacion, roles y permisos estan en [docs/AUTHORIZATION.md](docs/AUTHORI
 El patron de Form Requests y Policies esta en [docs/REQUESTS_POLICIES.md](docs/REQUESTS_POLICIES.md).
 La estructura institucional multi-sede esta en [docs/INSTITUTIONAL_STRUCTURE.md](docs/INSTITUTIONAL_STRUCTURE.md).
 Los reportes oficiales estan en [docs/OFFICIAL_REPORTS.md](docs/OFFICIAL_REPORTS.md).
+La estrategia de pruebas esta en [docs/TESTING.md](docs/TESTING.md).
 El flujo financiero de produccion esta en [docs/FINANCE.md](docs/FINANCE.md).
 La validacion de ofertas y matricula de asignaturas esta en [docs/SUBJECT_ENROLLMENT.md](docs/SUBJECT_ENROLLMENT.md).
 El flujo de calificaciones, actas y cierre academico esta en [docs/GRADEBOOK.md](docs/GRADEBOOK.md).
