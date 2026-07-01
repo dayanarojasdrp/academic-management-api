@@ -42,6 +42,8 @@ use App\Models\SubjectOfferingSchedule;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class DatabaseSeeder extends Seeder
 {
@@ -52,6 +54,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->resetDemoData();
+
         $permissions = $this->seedPermissions();
         $roles = $this->seedRoles($permissions);
 
@@ -481,7 +485,582 @@ class DatabaseSeeder extends Seeder
             'recorded_at' => '2026-09-07 08:05:00',
         ]);
 
+        $this->seedExpandedDemoData(
+            $institution,
+            $campus,
+            $faculty,
+            $department,
+            $modality,
+            $career,
+            $course,
+            $plan,
+            $group,
+            $subjects,
+            $scale,
+            $enrollmentConcept
+        );
+
         $this->seedUsers($roles, $student, $professor, $institution, $campus);
+    }
+
+    private function resetDemoData(): void
+    {
+        $tables = [
+            'personal_access_tokens',
+            'status_histories',
+            'grade_audit_logs',
+            'certificates',
+            'attendance_records',
+            'class_sessions',
+            'admission_decisions',
+            'admission_interviews',
+            'application_documents',
+            'applicants',
+            'grade_change_requests',
+            'grades',
+            'grade_sheets',
+            'grade_components',
+            'grading_scale_levels',
+            'grading_scales',
+            'subject_offering_schedules',
+            'subject_enrollments',
+            'subject_offerings',
+            'subject_prerequisites',
+            'payment_receipts',
+            'payment_allocations',
+            'financial_adjustments',
+            'financial_holds',
+            'financial_concepts',
+            'student_payments',
+            'student_charges',
+            'finances',
+            'enrollments',
+            'students',
+            'professors',
+            'users',
+            'role_user',
+            'permission_role',
+            'roles',
+            'permissions',
+            'groups',
+            'curriculum_plan_subject',
+            'curriculum_plans',
+            'subjects',
+            'courses',
+            'careers',
+            'modalities',
+            'departments',
+            'faculties',
+            'campuses',
+            'institutions',
+        ];
+
+        $driver = DB::connection()->getDriverName();
+
+        if ($driver === 'mysql') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        } elseif ($driver === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys=OFF');
+        }
+
+        foreach ($tables as $table) {
+            if (Schema::hasTable($table)) {
+                DB::table($table)->truncate();
+            }
+        }
+
+        if ($driver === 'mysql') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        } elseif ($driver === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys=ON');
+        }
+    }
+
+    private function seedExpandedDemoData(
+        Institution $institution,
+        Campus $campus,
+        Faculty $faculty,
+        Department $department,
+        Modality $modality,
+        Career $informaticsCareer,
+        Course $activeCourse,
+        CurriculumPlan $informaticsPlan,
+        Group $informaticsGroup,
+        $baseSubjects,
+        GradingScale $scale,
+        FinancialConcept $enrollmentConcept
+    ): void {
+        $virtualModality = Modality::create([
+            'institution_id' => $institution->id,
+            'code' => 'VIRTUAL',
+            'name' => 'Virtual',
+            'requires_classroom' => false,
+            'requires_online_platform' => true,
+            'status' => 'active',
+        ]);
+
+        $businessDepartment = Department::create([
+            'institution_id' => $institution->id,
+            'faculty_id' => $faculty->id,
+            'campus_id' => $campus->id,
+            'code' => 'DAD',
+            'name' => 'Departamento de Administracion',
+            'status' => 'active',
+        ]);
+
+        $businessCareer = Career::create([
+            'institution_id' => $institution->id,
+            'faculty_id' => $faculty->id,
+            'department_id' => $businessDepartment->id,
+            'modality_id' => $virtualModality->id,
+            'name' => 'Administracion de Empresas',
+            'abbreviation' => 'ADE',
+            'description' => 'Carrera orientada a gestion organizacional, finanzas y emprendimiento.',
+        ]);
+
+        $previousCourse = Course::create([
+            'institution_id' => $institution->id,
+            'campus_id' => $campus->id,
+            'name' => 'Curso 2025-2026',
+            'start_date' => '2025-09-01',
+            'end_date' => '2026-07-31',
+            'status' => 'closed',
+        ]);
+
+        $nextCourse = Course::create([
+            'institution_id' => $institution->id,
+            'campus_id' => $campus->id,
+            'name' => 'Curso 2027-2028',
+            'start_date' => '2027-09-01',
+            'end_date' => '2028-07-31',
+            'status' => 'draft',
+        ]);
+
+        $extraSubjects = collect([
+            ['code' => 'BD-201', 'name' => 'Bases de Datos', 'credits' => 4, 'weekly_hours' => 6],
+            ['code' => 'WEB-202', 'name' => 'Desarrollo Web', 'credits' => 5, 'weekly_hours' => 8],
+            ['code' => 'ADM-101', 'name' => 'Administracion General', 'credits' => 4, 'weekly_hours' => 5],
+            ['code' => 'CON-101', 'name' => 'Contabilidad I', 'credits' => 4, 'weekly_hours' => 5],
+            ['code' => 'FIN-201', 'name' => 'Finanzas Empresariales', 'credits' => 4, 'weekly_hours' => 5],
+        ])->map(fn (array $data) => Subject::create($data));
+
+        $allInformaticsSubjects = $baseSubjects->merge($extraSubjects->take(2));
+        $informaticsPlan->subjects()->sync($allInformaticsSubjects->mapWithKeys(fn (Subject $subject, int $index) => [
+            $subject->id => [
+                'semester' => $index < 2 ? 1 : 2,
+                'is_required' => true,
+                'minimum_passing_grade' => 60,
+            ],
+        ]));
+
+        $businessPlan = CurriculumPlan::create([
+            'career_id' => $businessCareer->id,
+            'effective_course_id' => $activeCourse->id,
+            'name' => 'Plan Administracion Regular',
+            'version' => '2026',
+            'duration_semesters' => 8,
+            'status' => 'active',
+            'is_current' => true,
+        ]);
+
+        $businessSubjects = $extraSubjects->slice(2)->values();
+        $businessPlan->subjects()->sync($businessSubjects->mapWithKeys(fn (Subject $subject, int $index) => [
+            $subject->id => [
+                'semester' => $index + 1,
+                'is_required' => true,
+                'minimum_passing_grade' => 60,
+            ],
+        ]));
+
+        $informaticsGroupB = Group::create([
+            'institution_id' => $institution->id,
+            'campus_id' => $campus->id,
+            'faculty_id' => $faculty->id,
+            'department_id' => $department->id,
+            'modality_id' => $modality->id,
+            'course_id' => $activeCourse->id,
+            'career_id' => $informaticsCareer->id,
+            'name' => 'INF-1B',
+            'shift' => 'vespertino',
+            'status' => 'active',
+        ]);
+
+        $businessGroup = Group::create([
+            'institution_id' => $institution->id,
+            'campus_id' => $campus->id,
+            'faculty_id' => $faculty->id,
+            'department_id' => $businessDepartment->id,
+            'modality_id' => $virtualModality->id,
+            'course_id' => $activeCourse->id,
+            'career_id' => $businessCareer->id,
+            'name' => 'ADE-1A',
+            'shift' => 'virtual',
+            'status' => 'active',
+        ]);
+
+        $professors = collect([
+            ['PROF-0002', 'Mariela', 'Sanchez', 'mariela.sanchez@example.edu', $extraSubjects[0]->id, $department->id],
+            ['PROF-0003', 'Jorge', 'Diaz', 'jorge.diaz@example.edu', $extraSubjects[1]->id, $department->id],
+            ['PROF-0004', 'Elena', 'Torres', 'elena.torres@example.edu', $businessSubjects[0]->id, $businessDepartment->id],
+        ])->map(fn (array $professor) => Professor::create([
+            'institution_id' => $institution->id,
+            'campus_id' => $campus->id,
+            'faculty_id' => $faculty->id,
+            'department_id' => $professor[5],
+            'subject_id' => $professor[4],
+            'professor_code' => $professor[0],
+            'first_name' => $professor[1],
+            'last_name' => $professor[2],
+            'email' => $professor[3],
+            'status' => 'active',
+        ]));
+
+        $offerings = collect([
+            [$informaticsGroup, $allInformaticsSubjects[0], $professors[0], 1, 35, 'open'],
+            [$informaticsGroup, $allInformaticsSubjects[2], $professors[0], 2, 30, 'open'],
+            [$informaticsGroupB, $allInformaticsSubjects[3], $professors[1], 2, 1, 'open'],
+            [$businessGroup, $businessSubjects[0], $professors[2], 1, 25, 'open'],
+            [$businessGroup, $businessSubjects[1], $professors[2], 1, 25, 'open'],
+        ])->map(function (array $row, int $index) use ($institution, $campus, $faculty, $department, $modality, $informaticsCareer, $businessCareer, $informaticsPlan, $businessPlan, $activeCourse) {
+            [$group, $subject, $professor, $semester, $capacity, $status] = $row;
+            $isBusiness = str_starts_with($group->name, 'ADE');
+
+            $offering = SubjectOffering::create([
+                'institution_id' => $institution->id,
+                'campus_id' => $campus->id,
+                'faculty_id' => $faculty->id,
+                'department_id' => $isBusiness ? $professor->department_id : $department->id,
+                'modality_id' => $isBusiness ? $group->modality_id : $modality->id,
+                'course_id' => $activeCourse->id,
+                'career_id' => $isBusiness ? $businessCareer->id : $informaticsCareer->id,
+                'group_id' => $group->id,
+                'curriculum_plan_id' => $isBusiness ? $businessPlan->id : $informaticsPlan->id,
+                'subject_id' => $subject->id,
+                'professor_id' => $professor->id,
+                'semester' => $semester,
+                'capacity' => $capacity,
+                'reserved_seats' => $index === 2 ? 1 : 0,
+                'modality' => $isBusiness ? 'virtual' : 'presencial',
+                'status' => $status,
+                'starts_at' => '2026-09-01',
+                'ends_at' => '2026-12-20',
+            ]);
+
+            SubjectOfferingSchedule::create([
+                'subject_offering_id' => $offering->id,
+                'weekday' => ($index % 5) + 1,
+                'starts_at' => str_pad((string) (8 + $index), 2, '0', STR_PAD_LEFT).':00',
+                'ends_at' => str_pad((string) (10 + $index), 2, '0', STR_PAD_LEFT).':00',
+                'classroom' => $isBusiness ? 'Aula Virtual' : 'Lab '.($index + 2),
+            ]);
+
+            return $offering;
+        });
+
+        $students = collect([
+            ['EST-0002', 'Beatriz', 'Lopez Ruiz', '00010212345', 'beatriz.lopez@example.edu', $informaticsGroup->id, 'active', 'paid', 92],
+            ['EST-0003', 'Daniel', 'Morales Vega', '00010312345', 'daniel.morales@example.edu', $informaticsGroup->id, 'active', 'debt', 55],
+            ['EST-0004', 'Camila', 'Herrera Cruz', '00010412345', 'camila.herrera@example.edu', $informaticsGroupB->id, 'active', 'partial', 76],
+            ['EST-0005', 'Roberto', 'Nunez Leon', '00010512345', 'roberto.nunez@example.edu', $businessGroup->id, 'active', 'paid', 81],
+            ['EST-0006', 'Paola', 'Castillo Mena', '00010612345', 'paola.castillo@example.edu', $businessGroup->id, 'withdrawn', 'paid', 68],
+            ['EST-0007', 'Miguel', 'Alvarez Soto', '00010712345', 'miguel.alvarez@example.edu', $informaticsGroup->id, 'graduated', 'paid', 97],
+        ])->map(function (array $row) {
+            return Student::create([
+                'group_id' => $row[5],
+                'student_code' => $row[0],
+                'first_name' => $row[1],
+                'last_name' => $row[2],
+                'document_type' => 'carnet',
+                'document_number' => $row[3],
+                'email' => $row[4],
+                'phone' => '+53555'.substr($row[3], -4),
+                'birth_date' => '2000-01-15',
+                'admission_date' => '2026-09-01',
+                'exit_date' => $row[6] === 'withdrawn' ? '2026-11-15' : ($row[6] === 'graduated' ? '2027-07-20' : null),
+                'exit_reason' => $row[6] === 'withdrawn' ? 'personal_reasons' : ($row[6] === 'graduated' ? 'graduation' : null),
+                'status' => $row[6],
+            ]);
+        });
+
+        $tuitionConcept = FinancialConcept::create([
+            'code' => 'MONTHLY_TUITION',
+            'name' => 'Mensualidad academica',
+            'type' => 'tuition',
+            'default_amount' => 120.00,
+            'currency' => 'USD',
+            'is_required_for_enrollment' => false,
+            'is_active' => true,
+            'description' => 'Cargo mensual recurrente para reportes financieros.',
+        ]);
+
+        $students->each(function (Student $student, int $index) use ($activeCourse, $previousCourse, $enrollmentConcept, $tuitionConcept, $offerings, $scale): void {
+            $statusMode = ['paid', 'debt', 'partial', 'paid', 'paid', 'paid'][$index];
+            $enrollment = Enrollment::create([
+                'student_id' => $student->id,
+                'start_course_id' => $activeCourse->id,
+                'end_course_id' => $student->status === 'withdrawn' ? $activeCourse->id : null,
+                'enrollment_date' => '2026-09-01',
+                'status' => $student->status === 'withdrawn' ? 'cancelled' : 'active',
+                'notes' => 'Matricula demo '.$student->student_code,
+            ]);
+
+            $student->update(['current_enrollment_id' => $enrollment->id]);
+
+            $paid = $statusMode === 'debt' ? 0 : ($statusMode === 'partial' ? 100 : 250);
+            $charge = StudentCharge::create([
+                'student_id' => $student->id,
+                'enrollment_id' => $enrollment->id,
+                'course_id' => $activeCourse->id,
+                'financial_concept_id' => $enrollmentConcept->id,
+                'original_amount' => 250,
+                'adjustment_amount' => 0,
+                'paid_amount' => $paid,
+                'balance_amount' => 250 - $paid,
+                'currency' => 'USD',
+                'issue_date' => '2026-08-01',
+                'due_date' => '2026-08-30',
+                'status' => $paid >= 250 ? 'paid' : ($paid > 0 ? 'partial' : 'overdue'),
+            ]);
+
+            StudentCharge::create([
+                'student_id' => $student->id,
+                'enrollment_id' => $enrollment->id,
+                'course_id' => $activeCourse->id,
+                'financial_concept_id' => $tuitionConcept->id,
+                'original_amount' => 120,
+                'adjustment_amount' => $index === 3 ? -20 : 0,
+                'paid_amount' => $index === 1 ? 0 : 120,
+                'balance_amount' => $index === 1 ? 120 : 0,
+                'currency' => 'USD',
+                'issue_date' => '2026-09-01',
+                'due_date' => '2026-09-30',
+                'status' => $index === 1 ? 'overdue' : 'paid',
+                'notes' => $index === 3 ? 'Descuento demo aplicado.' : null,
+            ]);
+
+            if ($paid > 0) {
+                $payment = StudentPayment::create([
+                    'student_id' => $student->id,
+                    'enrollment_id' => $enrollment->id,
+                    'amount' => $paid,
+                    'unallocated_amount' => 0,
+                    'currency' => 'USD',
+                    'payment_method' => $index % 2 === 0 ? 'transfer' : 'cash',
+                    'payment_reference' => 'PAY-DEMO-'.$student->student_code,
+                    'paid_at' => '2026-08-25',
+                    'status' => 'confirmed',
+                ]);
+
+                PaymentAllocation::create([
+                    'student_payment_id' => $payment->id,
+                    'student_charge_id' => $charge->id,
+                    'amount' => $paid,
+                ]);
+
+                PaymentReceipt::create([
+                    'student_payment_id' => $payment->id,
+                    'receipt_number' => 'RCPT-'.$student->student_code,
+                    'issued_at' => '2026-08-25',
+                    'status' => 'issued',
+                ]);
+            }
+
+            $offering = $offerings[$index % $offerings->count()];
+            $subjectEnrollment = SubjectEnrollment::create([
+                'enrollment_id' => $enrollment->id,
+                'student_id' => $student->id,
+                'subject_id' => $offering->subject_id,
+                'subject_offering_id' => $offering->id,
+                'curriculum_plan_id' => $offering->curriculum_plan_id,
+                'course_id' => $activeCourse->id,
+                'career_id' => $offering->career_id,
+                'group_id' => $offering->group_id,
+                'semester' => $offering->semester,
+                'enrolled_at' => '2026-09-01',
+                'completed_at' => $index >= 4 ? '2026-12-20' : null,
+                'status' => $index === 1 ? 'failed' : ($index >= 4 ? 'passed' : 'enrolled'),
+            ]);
+
+            $sheet = GradeSheet::firstOrCreate([
+                'subject_offering_id' => $offering->id,
+                'sheet_type' => 'ordinary',
+                'call_number' => 1,
+                'partial_number' => null,
+            ], [
+                'professor_id' => $offering->professor_id,
+                'grading_scale_id' => $scale->id,
+                'course_id' => $offering->course_id,
+                'career_id' => $offering->career_id,
+                'group_id' => $offering->group_id,
+                'subject_id' => $offering->subject_id,
+                'status' => $index >= 4 ? 'closed' : 'submitted',
+                'opened_at' => '2026-12-01',
+                'submitted_at' => '2026-12-18 12:00:00',
+                'signed_at' => $index >= 4 ? '2026-12-19 09:00:00' : null,
+                'closed_at' => $index >= 4 ? '2026-12-20 09:00:00' : null,
+            ]);
+
+            $component = GradeComponent::firstOrCreate([
+                'subject_offering_id' => $offering->id,
+                'code' => 'FINAL',
+            ], [
+                'name' => 'Evaluacion final',
+                'type' => 'final',
+                'term' => 'final',
+                'weight' => 100,
+                'max_score' => 100,
+                'is_required' => true,
+                'due_date' => '2026-12-15',
+                'status' => 'active',
+                'sort_order' => 1,
+            ]);
+
+            $gradeValue = [92, 55, 76, 81, 68, 97][$index];
+            $levelCode = $gradeValue >= 90 ? 'A' : ($gradeValue >= 80 ? 'B' : ($gradeValue >= 70 ? 'C' : ($gradeValue >= 60 ? 'D' : 'F')));
+            $grade = Grade::create([
+                'subject_enrollment_id' => $subjectEnrollment->id,
+                'student_id' => $student->id,
+                'subject_id' => $offering->subject_id,
+                'professor_id' => $offering->professor_id,
+                'grade_sheet_id' => $sheet->id,
+                'grade_component_id' => $component->id,
+                'grading_scale_id' => $scale->id,
+                'grading_scale_level_id' => $scale->levels()->where('code', $levelCode)->value('id'),
+                'value' => $gradeValue,
+                'raw_value' => $gradeValue,
+                'normalized_value' => $gradeValue,
+                'weight' => 100,
+                'evaluation_type' => 'final',
+                'attempt_type' => 'ordinary',
+                'call_number' => 1,
+                'is_final' => true,
+                'evaluated_at' => '2026-12-15',
+                'published_at' => '2026-12-15 10:00:00',
+                'locked_at' => $index >= 4 ? '2026-12-20 09:00:00' : null,
+                'status' => 'published',
+            ]);
+
+            GradeAuditLog::create([
+                'grade_id' => $grade->id,
+                'old_grade' => null,
+                'new_grade' => $gradeValue,
+                'old_status' => null,
+                'new_status' => 'published',
+                'reason' => 'Carga de nota demo para '.$student->student_code,
+                'changed_at' => '2026-12-15 10:00:00',
+            ]);
+
+            $session = ClassSession::create([
+                'subject_offering_id' => $offering->id,
+                'course_id' => $offering->course_id,
+                'career_id' => $offering->career_id,
+                'group_id' => $offering->group_id,
+                'subject_id' => $offering->subject_id,
+                'professor_id' => $offering->professor_id,
+                'session_date' => '2026-09-'.str_pad((string) (10 + $index), 2, '0', STR_PAD_LEFT),
+                'starts_at' => '08:00',
+                'ends_at' => '10:00',
+                'classroom' => 'Demo '.$index,
+                'topic' => 'Clase demo '.$student->student_code,
+                'delivery_mode' => $index === 3 ? 'virtual' : 'presencial',
+                'status' => 'completed',
+            ]);
+
+            AttendanceRecord::create([
+                'class_session_id' => $session->id,
+                'student_id' => $student->id,
+                'subject_enrollment_id' => $subjectEnrollment->id,
+                'status' => $index === 1 ? 'absent' : ($index === 2 ? 'late' : 'present'),
+                'minutes_late' => $index === 2 ? 15 : 0,
+                'justified' => $index === 1,
+                'recorded_at' => '2026-09-15 08:10:00',
+            ]);
+
+            Certificate::create([
+                'certificate_code' => 'CERT-'.$student->student_code,
+                'student_id' => $student->id,
+                'type' => $index === 1 ? 'financial_status_certificate' : 'grade_certificate',
+                'course_id' => $activeCourse->id,
+                'enrollment_id' => $enrollment->id,
+                'generated_at' => '2026-12-21 09:00:00',
+                'verification_code' => 'VERIFY'.$student->student_code.'2026',
+                'status' => 'generated',
+                'snapshot_data' => [
+                    'student' => [
+                        'student_code' => $student->student_code,
+                        'first_name' => $student->first_name,
+                        'last_name' => $student->last_name,
+                        'status' => $student->status,
+                    ],
+                    'course' => ['name' => $activeCourse->name],
+                    'grade' => $gradeValue,
+                    'issued_at' => '2026-12-21T09:00:00Z',
+                ],
+            ]);
+        });
+
+        collect([
+            ['ASP-2026-0002', 'Nadia', 'Suarez', 'P20260002', 'submitted', 72],
+            ['ASP-2026-0003', 'Oscar', 'Pineda', 'P20260003', 'waitlisted', 69],
+            ['ASP-2026-0004', 'Iris', 'Valdes', 'P20260004', 'rejected', 48],
+        ])->each(function (array $row, int $index) use ($institution, $campus, $businessCareer, $activeCourse, $businessGroup): void {
+            $applicant = Applicant::create([
+                'institution_id' => $institution->id,
+                'campus_id' => $campus->id,
+                'career_id' => $businessCareer->id,
+                'course_id' => $activeCourse->id,
+                'group_id' => $businessGroup->id,
+                'applicant_code' => $row[0],
+                'first_name' => $row[1],
+                'last_name' => $row[2],
+                'document_type' => 'pasaporte',
+                'document_number' => $row[3],
+                'email' => strtolower($row[1]).'.demo@example.edu',
+                'application_date' => '2026-06-'.str_pad((string) (20 + $index), 2, '0', STR_PAD_LEFT),
+                'source' => $index === 0 ? 'web' : 'referral',
+                'status' => $row[4],
+            ]);
+
+            ApplicationDocument::create([
+                'applicant_id' => $applicant->id,
+                'type' => 'identity_document',
+                'name' => 'Documento de identidad',
+                'status' => $index === 2 ? 'rejected' : 'verified',
+                'verified_at' => $index === 2 ? null : '2026-06-25 09:00:00',
+                'rejection_reason' => $index === 2 ? 'Documento ilegible.' : null,
+            ]);
+
+            AdmissionInterview::create([
+                'applicant_id' => $applicant->id,
+                'scheduled_at' => '2026-06-26 10:00:00',
+                'completed_at' => $index === 0 ? null : '2026-06-26 10:30:00',
+                'score' => $row[5],
+                'result' => $row[4] === 'submitted' ? 'scheduled' : $row[4],
+                'notes' => 'Entrevista demo.',
+            ]);
+
+            if ($row[4] !== 'submitted') {
+                AdmissionDecision::create([
+                    'applicant_id' => $applicant->id,
+                    'decision' => $row[4],
+                    'decision_date' => '2026-06-28',
+                    'score' => $row[5],
+                    'reason' => 'Decision demo de admisiones.',
+                    'conditions' => ['financial_clearance_required' => $row[4] === 'waitlisted'],
+                ]);
+            }
+        });
+
+        Finance::create([
+            'student_id' => $students[1]->id,
+            'amount' => 120,
+            'currency' => 'USD',
+            'concept' => 'tuition',
+            'payment_method' => 'manual',
+            'payment_reference' => 'LEGACY-DEBT-EST-0003',
+            'paid_at' => null,
+            'status' => 'pending',
+        ]);
     }
 
     private function seedPermissions()

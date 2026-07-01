@@ -140,6 +140,7 @@ LOG_LEVEL=info
 ## Documentation
 
 - Frontend contract: [docs/FRONTEND_CONTRACT.md](docs/FRONTEND_CONTRACT.md)
+- Demo data and manual QA: [docs/DEMO_DATA.md](docs/DEMO_DATA.md)
 - API guide: [docs/API.md](docs/API.md)
 - Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - Authorization: [docs/AUTHORIZATION.md](docs/AUTHORIZATION.md)
