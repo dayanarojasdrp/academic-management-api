@@ -45,4 +45,14 @@ class SubjectOffering extends Model
     {
         return $this->hasMany(SubjectEnrollment::class);
     }
+
+    public function gradeComponents(): HasMany
+    {
+        return $this->hasMany(GradeComponent::class);
+    }
+
+    public function gradeSheets(): HasMany
+    {
+        return $this->hasMany(GradeSheet::class);
+    }
 }

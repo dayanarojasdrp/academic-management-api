@@ -73,4 +73,9 @@ class SubjectEnrollment extends Model
     {
         return $this->hasMany(Grade::class);
     }
+
+    public function finalGrades(): HasMany
+    {
+        return $this->hasMany(Grade::class)->where('is_final', true);
+    }
 }
