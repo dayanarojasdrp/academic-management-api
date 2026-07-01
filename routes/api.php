@@ -26,6 +26,8 @@ use App\Http\Controllers\Api\GroupController;
 use App\Http\Controllers\Api\InstitutionController;
 use App\Http\Controllers\Api\ModalityController;
 use App\Http\Controllers\Api\ProfessorController;
+use App\Http\Controllers\Api\Reports\AcademicReportController;
+use App\Http\Controllers\Api\Reports\FinanceReportController;
 use App\Http\Controllers\Api\StatusHistoryController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\SubjectEnrollmentController;
@@ -170,5 +172,17 @@ Route::middleware('auth:sanctum')->group(function (): void {
         ->middleware('permission:grades.view,grades.manage');
     Route::apiResource('grades', GradeController::class)->only(['index', 'show'])->middleware('permission:grades.view,grades.manage');
     Route::apiResource('grades', GradeController::class)->except(['index', 'show'])->middleware('permission:grades.manage');
+    Route::prefix('reports')->group(function (): void {
+        Route::get('enrollment-by-period', [AcademicReportController::class, 'enrollmentByPeriod'])->middleware('permission:reports.academic.view');
+        Route::get('grades-by-group', [AcademicReportController::class, 'gradesByGroup'])->middleware('permission:reports.academic.view');
+        Route::get('grade-sheets', [AcademicReportController::class, 'gradeSheets'])->middleware('permission:reports.academic.view,grades.view');
+        Route::get('students/{student}/certificate', [AcademicReportController::class, 'certificate'])->middleware('permission:reports.academic.view,academic_history.view');
+        Route::get('students/{student}/kardex', [AcademicReportController::class, 'kardex'])->middleware('permission:reports.academic.view,academic_history.view');
+        Route::get('graduates', [AcademicReportController::class, 'graduates'])->middleware('permission:reports.academic.view');
+        Route::get('withdrawals', [AcademicReportController::class, 'withdrawals'])->middleware('permission:reports.academic.view');
+        Route::get('retention', [AcademicReportController::class, 'retention'])->middleware('permission:reports.academic.view');
+        Route::get('faculty-performance', [AcademicReportController::class, 'facultyPerformance'])->middleware('permission:reports.academic.view');
+        Route::get('delinquency', [FinanceReportController::class, 'delinquency'])->middleware('permission:reports.finance.view,finances.view');
+    });
     Route::apiResource('status-histories', StatusHistoryController::class)->only(['index', 'show'])->middleware('permission:audit.view');
 });
