@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Actions\Academic\PaymentVerifier;
 use App\Http\Resources\StudentResource;
 use App\Models\Student;
+use App\Services\Academic\AcademicHistoryService;
 use App\Support\ApiQuery;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
@@ -71,18 +72,32 @@ class StudentController extends ApiController
         ]);
     }
 
-    public function academicHistory(Student $student): JsonResponse
+    public function academicSummary(Student $student, AcademicHistoryService $academicHistoryService): JsonResponse
     {
-        return response()->json([
-            'student' => $student->load(['group.course', 'group.career', 'currentEnrollment']),
-            'subject_enrollments' => $student->subjectEnrollments()
-                ->with(['subject', 'course', 'career', 'group', 'grades.professor'])
-                ->latest('id')
-                ->get(),
-            'passed_subjects' => $student->subjectEnrollments()
-                ->where('status', 'passed')
-                ->with(['subject', 'course', 'career', 'grades.professor'])
-                ->get(),
-        ]);
+        return response()->json($academicHistoryService->summary($student));
+    }
+
+    public function academicHistory(
+        Student $student,
+        Request $request,
+        AcademicHistoryService $academicHistoryService
+    ): JsonResponse {
+        return response()->json($academicHistoryService->subjectHistory($student, $request));
+    }
+
+    public function kardex(
+        Student $student,
+        Request $request,
+        AcademicHistoryService $academicHistoryService
+    ): JsonResponse {
+        return response()->json($academicHistoryService->kardex($student, $request));
+    }
+
+    public function grades(
+        Student $student,
+        Request $request,
+        AcademicHistoryService $academicHistoryService
+    ): JsonResponse {
+        return response()->json($academicHistoryService->grades($student, $request));
     }
 }

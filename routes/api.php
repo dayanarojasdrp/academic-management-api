@@ -41,7 +41,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('groups/{group}/students', [GroupController::class, 'students'])->middleware('permission:students.view');
     Route::get('students/{student}/payment-status', [StudentController::class, 'paymentStatus'])->middleware('permission:finances.view,enrollments.create');
     Route::get('students/{student}/financial-clearance', [FinancialClearanceController::class, 'show'])->middleware('permission:finances.view,enrollments.create');
+    Route::get('students/{student}/academic-summary', [StudentController::class, 'academicSummary'])->middleware('permission:academic_history.view');
     Route::get('students/{student}/academic-history', [StudentController::class, 'academicHistory'])->middleware('permission:academic_history.view');
+    Route::get('students/{student}/kardex', [StudentController::class, 'kardex'])->middleware('permission:academic_history.view');
+    Route::get('students/{student}/grades', [StudentController::class, 'grades'])->middleware('permission:grades.view,academic_history.view');
     Route::patch('finances/{finance}/mark-paid', [FinanceController::class, 'markPaid'])->middleware('permission:finances.payments.validate');
     Route::post('student-charges/{studentCharge}/adjustments', [StudentChargeController::class, 'adjust'])->middleware('permission:finances.manage');
 
