@@ -19,6 +19,8 @@ use App\Http\Controllers\Api\ProfessorController;
 use App\Http\Controllers\Api\StatusHistoryController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\SubjectEnrollmentController;
+use App\Http\Controllers\Api\SubjectOfferingController;
+use App\Http\Controllers\Api\SubjectOfferingScheduleController;
 use App\Http\Controllers\Api\SubjectController;
 use Illuminate\Support\Facades\Route;
 
@@ -96,6 +98,17 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::apiResource('professors', ProfessorController::class)->except(['index', 'show'])->middleware('permission:professors.manage');
     Route::apiResource('subject-enrollments', SubjectEnrollmentController::class)->only(['index', 'show'])->middleware('permission:subject_enrollments.view,subject_enrollments.manage');
     Route::apiResource('subject-enrollments', SubjectEnrollmentController::class)->except(['index', 'show'])->middleware('permission:subject_enrollments.manage');
+    Route::apiResource('subject-offerings', SubjectOfferingController::class)
+        ->parameters(['subject-offerings' => 'subjectOffering'])
+        ->only(['index', 'show'])
+        ->middleware('permission:subject_enrollments.view,subject_enrollments.manage');
+    Route::apiResource('subject-offerings', SubjectOfferingController::class)
+        ->parameters(['subject-offerings' => 'subjectOffering'])
+        ->except(['index', 'show'])
+        ->middleware('permission:subject_enrollments.manage');
+    Route::apiResource('subject-offering-schedules', SubjectOfferingScheduleController::class)
+        ->parameters(['subject-offering-schedules' => 'subjectOfferingSchedule'])
+        ->middleware('permission:subject_enrollments.manage');
     Route::apiResource('grades', GradeController::class)->only(['index', 'show'])->middleware('permission:grades.view,grades.manage');
     Route::apiResource('grades', GradeController::class)->except(['index', 'show'])->middleware('permission:grades.manage');
     Route::apiResource('status-histories', StatusHistoryController::class)->only(['index', 'show'])->middleware('permission:audit.view');
