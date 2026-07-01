@@ -60,10 +60,13 @@ class StudentController extends ApiController
 
     public function paymentStatus(Student $student, PaymentVerifier $paymentVerifier): JsonResponse
     {
+        $courseId = request()->integer('course_id') ?: null;
+
         return response()->json([
             'student_id' => $student->id,
-            'can_enroll' => $paymentVerifier->studentCanEnroll($student),
+            'can_enroll' => $paymentVerifier->studentCanEnroll($student, $courseId),
             'required_payment_concept' => 'enrollment',
+            'clearance' => $paymentVerifier->clearance($student, $courseId),
             'latest_payments' => $student->finances()->latest('id')->take(10)->get(),
         ]);
     }
