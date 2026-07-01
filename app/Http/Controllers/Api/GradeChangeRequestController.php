@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\Academic\GradebookService;
-use App\Http\Requests\Grades\StoreGradeChangeRequestRequest;
 use App\Models\GradeChangeRequest;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
@@ -34,9 +33,11 @@ class GradeChangeRequestController extends ApiController
     public function update(Request $request, GradeChangeRequest $gradeChangeRequest) { return $this->updateRecord($request, $gradeChangeRequest); }
     public function destroy(GradeChangeRequest $gradeChangeRequest) { return $this->destroyRecord($gradeChangeRequest); }
 
-    public function store(StoreGradeChangeRequestRequest $request): JsonResponse
+    public function store(Request $request): JsonResponse
     {
-        $validated = $request->validated();
+        $this->authorize('create', GradeChangeRequest::class);
+
+        $validated = $request->validate($this->rules());
         $grade = \App\Models\Grade::query()->findOrFail($validated['grade_id']);
         $gradeChangeRequest = GradeChangeRequest::create(array_merge($validated, [
             'requested_by_user_id' => $validated['requested_by_user_id'] ?? $request->user()?->id,

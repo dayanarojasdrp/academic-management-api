@@ -3,8 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\Academic\GradebookService;
-use App\Http\Requests\Grades\StoreGradeRequest;
-use App\Http\Requests\Grades\UpdateGradeRequest;
 use App\Models\Grade;
 use App\Support\ApiQuery;
 use Illuminate\Database\Eloquent\Model;
@@ -69,9 +67,13 @@ class GradeController extends ApiController
         return $this->destroyRecord($grade);
     }
 
-    public function store(StoreGradeRequest $request, GradebookService $gradebookService): JsonResponse
+    public function store(Request $request): JsonResponse
     {
-        $validated = $request->validated();
+        $this->authorize('create', Grade::class);
+
+        /** @var GradebookService $gradebookService */
+        $gradebookService = app(GradebookService::class);
+        $validated = $request->validate($this->rules());
 
         $grade = DB::transaction(function () use ($request, $validated, $gradebookService): Grade {
             $grade = new Grade();
@@ -86,9 +88,11 @@ class GradeController extends ApiController
         return response()->json($grade->fresh()->load($this->relations), 201);
     }
 
-    public function update(UpdateGradeRequest $request, Grade $grade, GradebookService $gradebookService): JsonResponse
+    public function update(Request $request, Grade $grade, GradebookService $gradebookService): JsonResponse
     {
-        $validated = $request->validated();
+        $this->authorize('update', $grade);
+
+        $validated = $request->validate($this->rules($grade));
 
         $grade = DB::transaction(function () use ($request, $validated, $grade, $gradebookService): Grade {
             $previousStatus = $grade->status;

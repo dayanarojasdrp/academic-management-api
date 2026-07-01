@@ -3,8 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\Academic\RegisterSubjectEnrollment;
-use App\Http\Requests\SubjectEnrollments\StoreSubjectEnrollmentRequest;
-use App\Http\Requests\SubjectEnrollments\UpdateSubjectEnrollmentRequest;
 use App\Http\Resources\SubjectEnrollmentResource;
 use App\Models\SubjectEnrollment;
 use Illuminate\Database\Eloquent\Model;
@@ -31,8 +29,10 @@ class SubjectEnrollmentController extends ApiController
         return $this->showRecord($subjectEnrollment);
     }
 
-    public function update(UpdateSubjectEnrollmentRequest $request, SubjectEnrollment $subjectEnrollment)
+    public function update(Request $request, SubjectEnrollment $subjectEnrollment)
     {
+        $this->authorize('update', $subjectEnrollment);
+
         return $this->updateRecord($request, $subjectEnrollment);
     }
 
@@ -43,9 +43,13 @@ class SubjectEnrollmentController extends ApiController
         return $this->destroyRecord($subjectEnrollment);
     }
 
-    public function store(StoreSubjectEnrollmentRequest $request, RegisterSubjectEnrollment $registerSubjectEnrollment): JsonResponse
+    public function store(Request $request): JsonResponse
     {
-        $validated = $request->validated();
+        $this->authorize('create', SubjectEnrollment::class);
+
+        /** @var RegisterSubjectEnrollment $registerSubjectEnrollment */
+        $registerSubjectEnrollment = app(RegisterSubjectEnrollment::class);
+        $validated = $request->validate($this->rules());
         $subjectEnrollment = $registerSubjectEnrollment->handle($validated);
         $this->recordStatusChange($subjectEnrollment, null, $subjectEnrollment->status, $request);
 

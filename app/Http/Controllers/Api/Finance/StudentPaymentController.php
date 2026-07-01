@@ -16,8 +16,10 @@ class StudentPaymentController extends ApiController
 
     protected array $relations = ['student', 'enrollment', 'allocations.charge.concept', 'receipt'];
 
-    public function store(Request $request, StudentAccountService $accountService): JsonResponse
+    public function store(Request $request): JsonResponse
     {
+        /** @var StudentAccountService $accountService */
+        $accountService = app(StudentAccountService::class);
         $payment = $accountService->recordPayment($request->validate($this->rules()));
         $this->recordStatusChange($payment, null, $payment->status, $request);
 

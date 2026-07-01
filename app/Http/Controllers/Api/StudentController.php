@@ -3,8 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\Academic\PaymentVerifier;
-use App\Http\Requests\Students\StoreStudentRequest;
-use App\Http\Requests\Students\UpdateStudentRequest;
 use App\Http\Resources\StudentResource;
 use App\Models\Student;
 use App\Services\Academic\AcademicHistoryService;
@@ -39,8 +37,10 @@ class StudentController extends ApiController
         return StudentResource::collection(ApiQuery::paginate($query, $request))->response();
     }
 
-    public function store(StoreStudentRequest $request): JsonResponse
+    public function store(Request $request): JsonResponse
     {
+        $this->authorize('create', Student::class);
+
         return $this->storeRecord($request);
     }
 
@@ -51,8 +51,10 @@ class StudentController extends ApiController
         return $this->showRecord($student);
     }
 
-    public function update(UpdateStudentRequest $request, Student $student)
+    public function update(Request $request, Student $student)
     {
+        $this->authorize('update', $student);
+
         return $this->updateRecord($request, $student);
     }
 

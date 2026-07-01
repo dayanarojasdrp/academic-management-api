@@ -15,8 +15,10 @@ class StudentChargeController extends ApiController
 
     protected array $relations = ['student', 'course', 'concept', 'adjustments', 'allocations.payment'];
 
-    public function store(Request $request, StudentAccountService $accountService): JsonResponse
+    public function store(Request $request): JsonResponse
     {
+        /** @var StudentAccountService $accountService */
+        $accountService = app(StudentAccountService::class);
         $charge = $accountService->createCharge($request->validate($this->rules()));
         $this->recordStatusChange($charge, null, $charge->status, $request);
 
