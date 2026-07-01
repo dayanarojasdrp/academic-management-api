@@ -20,6 +20,8 @@ use App\Models\StudentCharge;
 use App\Models\StudentPayment;
 use App\Models\Subject;
 use App\Models\SubjectEnrollment;
+use App\Models\SubjectOffering;
+use App\Models\SubjectOfferingSchedule;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -56,10 +58,12 @@ class DatabaseSeeder extends Seeder
 
         $plan = CurriculumPlan::create([
             'career_id' => $career->id,
+            'effective_course_id' => $course->id,
             'name' => 'Plan Regular',
             'version' => '2026',
             'duration_semesters' => 10,
             'status' => 'active',
+            'is_current' => true,
         ]);
 
         $plan->subjects()->sync($subjects->mapWithKeys(fn (Subject $subject, int $index) => [
@@ -72,6 +76,30 @@ class DatabaseSeeder extends Seeder
             'name' => 'INF-1A',
             'shift' => 'diurno',
             'status' => 'active',
+        ]);
+
+        $offering = SubjectOffering::create([
+            'course_id' => $course->id,
+            'career_id' => $career->id,
+            'group_id' => $group->id,
+            'curriculum_plan_id' => $plan->id,
+            'subject_id' => $subjects->last()->id,
+            'professor_id' => $professor->id,
+            'semester' => 1,
+            'capacity' => 30,
+            'reserved_seats' => 0,
+            'modality' => 'presencial',
+            'status' => 'open',
+            'starts_at' => '2026-09-01',
+            'ends_at' => '2026-12-20',
+        ]);
+
+        SubjectOfferingSchedule::create([
+            'subject_offering_id' => $offering->id,
+            'weekday' => 1,
+            'starts_at' => '08:00',
+            'ends_at' => '10:00',
+            'classroom' => 'Lab 1',
         ]);
 
         $student = Student::create([
@@ -171,9 +199,12 @@ class DatabaseSeeder extends Seeder
             'enrollment_id' => $enrollment->id,
             'student_id' => $student->id,
             'subject_id' => $subjects->last()->id,
+            'subject_offering_id' => $offering->id,
+            'curriculum_plan_id' => $plan->id,
             'course_id' => $course->id,
             'career_id' => $career->id,
             'group_id' => $group->id,
+            'semester' => 1,
             'enrolled_at' => '2026-09-01',
             'status' => 'enrolled',
         ]);
