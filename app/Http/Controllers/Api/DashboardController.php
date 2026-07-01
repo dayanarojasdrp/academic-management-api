@@ -78,9 +78,18 @@ class DashboardController extends Controller
 
     private function averageEnrollmentCompletionTime(): string
     {
+        $driver = DB::connection()->getDriverName();
+        $expression = match ($driver) {
+            'mysql', 'mariadb' => 'avg(timestampdiff(second, enrollment_date, updated_at) / 86400)',
+            'pgsql' => 'avg(extract(epoch from (updated_at - enrollment_date)) / 86400)',
+            'sqlite' => 'avg(julianday(updated_at) - julianday(enrollment_date))',
+            default => 'avg(0)',
+        };
+
         $days = DB::table('enrollments')
             ->whereNotNull('enrollment_date')
-            ->selectRaw('avg(julianday(updated_at) - julianday(enrollment_date)) as days')
+            ->whereNotNull('updated_at')
+            ->selectRaw($expression.' as days')
             ->value('days');
 
         return round((float) $days, 2).' days';

@@ -44,9 +44,41 @@ use App\Http\Controllers\Api\SubjectEnrollmentController;
 use App\Http\Controllers\Api\SubjectOfferingController;
 use App\Http\Controllers\Api\SubjectOfferingScheduleController;
 use App\Http\Controllers\Api\SubjectController;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/health', fn () => ['status' => 'ok']);
+Route::get('/health', fn () => [
+    'status' => 'ok',
+    'app' => config('app.name'),
+    'environment' => app()->environment(),
+    'timestamp' => now()->toISOString(),
+]);
+Route::get('/health/deep', function () {
+    $checks = ['database' => 'ok', 'cache' => 'ok'];
+
+    try {
+        DB::select('select 1');
+    } catch (Throwable $exception) {
+        $checks['database'] = 'failed';
+    }
+
+    try {
+        Cache::put('health_check', now()->toISOString(), 10);
+    } catch (Throwable $exception) {
+        $checks['cache'] = 'failed';
+    }
+
+    $status = in_array('failed', $checks, true) ? 'degraded' : 'ok';
+
+    return response()->json([
+        'status' => $status,
+        'app' => config('app.name'),
+        'environment' => app()->environment(),
+        'checks' => $checks,
+        'timestamp' => now()->toISOString(),
+    ], $status === 'ok' ? 200 : 503);
+});
 Route::post('auth/login', [AuthController::class, 'login']);
 Route::get('certificates/verify/{verificationCode}', [CertificateController::class, 'verify']);
 

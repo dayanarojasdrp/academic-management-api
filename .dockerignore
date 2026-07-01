@@ -1,0 +1,17 @@
+.git
+.agents
+.codex
+vendor
+node_modules
+storage/logs/*.log
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+.env
+.env.*
+!.env.example
+database/*.sqlite
+npm-debug.log
+yarn-error.log
+Dockerfile
+docker-compose.yml
