@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\Academic\GradebookService;
+use App\Http\Requests\Grades\StoreGradeChangeRequestRequest;
 use App\Models\GradeChangeRequest;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
@@ -16,13 +17,26 @@ class GradeChangeRequestController extends ApiController
 
     protected array $relations = ['grade.student', 'grade.subject', 'requestedByUser', 'approvedByUser'];
 
-    public function show(GradeChangeRequest $gradeChangeRequest) { return $this->showRecord($gradeChangeRequest); }
+    public function index(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', GradeChangeRequest::class);
+
+        return parent::index($request);
+    }
+
+    public function show(GradeChangeRequest $gradeChangeRequest)
+    {
+        $this->authorize('view', $gradeChangeRequest);
+
+        return $this->showRecord($gradeChangeRequest);
+    }
+
     public function update(Request $request, GradeChangeRequest $gradeChangeRequest) { return $this->updateRecord($request, $gradeChangeRequest); }
     public function destroy(GradeChangeRequest $gradeChangeRequest) { return $this->destroyRecord($gradeChangeRequest); }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreGradeChangeRequestRequest $request): JsonResponse
     {
-        $validated = $request->validate($this->rules());
+        $validated = $request->validated();
         $grade = \App\Models\Grade::query()->findOrFail($validated['grade_id']);
         $gradeChangeRequest = GradeChangeRequest::create(array_merge($validated, [
             'requested_by_user_id' => $validated['requested_by_user_id'] ?? $request->user()?->id,
@@ -39,6 +53,8 @@ class GradeChangeRequestController extends ApiController
         GradeChangeRequest $gradeChangeRequest,
         GradebookService $gradebookService
     ): JsonResponse {
+        $this->authorize('approve', $gradeChangeRequest);
+
         $payload = $request->validate([
             'decision_reason' => ['nullable', 'string'],
         ]);
@@ -74,6 +90,8 @@ class GradeChangeRequestController extends ApiController
 
     public function reject(Request $request, GradeChangeRequest $gradeChangeRequest): JsonResponse
     {
+        $this->authorize('reject', $gradeChangeRequest);
+
         $payload = $request->validate([
             'decision_reason' => ['required', 'string'],
         ]);

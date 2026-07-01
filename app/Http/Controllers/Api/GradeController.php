@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\Academic\GradebookService;
+use App\Http\Requests\Grades\StoreGradeRequest;
+use App\Http\Requests\Grades\UpdateGradeRequest;
 use App\Models\Grade;
 use App\Support\ApiQuery;
 use Illuminate\Database\Eloquent\Model;
@@ -27,6 +29,8 @@ class GradeController extends ApiController
 
     public function index(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', Grade::class);
+
         $query = Grade::query()
             ->with($this->relations)
             ->orderByDesc('evaluated_at')
@@ -51,12 +55,23 @@ class GradeController extends ApiController
         return response()->json(ApiQuery::paginate($query, $request));
     }
 
-    public function show(Grade $grade) { return $this->showRecord($grade); }
-    public function destroy(Grade $grade) { return $this->destroyRecord($grade); }
-
-    public function store(Request $request, GradebookService $gradebookService): JsonResponse
+    public function show(Grade $grade)
     {
-        $validated = $request->validate($this->rules());
+        $this->authorize('view', $grade);
+
+        return $this->showRecord($grade);
+    }
+
+    public function destroy(Grade $grade)
+    {
+        $this->authorize('delete', $grade);
+
+        return $this->destroyRecord($grade);
+    }
+
+    public function store(StoreGradeRequest $request, GradebookService $gradebookService): JsonResponse
+    {
+        $validated = $request->validated();
 
         $grade = DB::transaction(function () use ($request, $validated, $gradebookService): Grade {
             $grade = new Grade();
@@ -71,9 +86,9 @@ class GradeController extends ApiController
         return response()->json($grade->fresh()->load($this->relations), 201);
     }
 
-    public function update(Request $request, Grade $grade, GradebookService $gradebookService): JsonResponse
+    public function update(UpdateGradeRequest $request, Grade $grade, GradebookService $gradebookService): JsonResponse
     {
-        $validated = $request->validate($this->rules($grade));
+        $validated = $request->validated();
 
         $grade = DB::transaction(function () use ($request, $validated, $grade, $gradebookService): Grade {
             $previousStatus = $grade->status;

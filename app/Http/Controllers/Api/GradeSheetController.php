@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\GradeSheets\StoreGradeSheetRequest;
+use App\Http\Requests\GradeSheets\UpdateGradeSheetRequest;
 use App\Models\GradeSheet;
 use App\Models\SubjectOffering;
 use Illuminate\Database\Eloquent\Model;
@@ -15,22 +17,40 @@ class GradeSheetController extends ApiController
 
     protected array $relations = ['subjectOffering', 'professor', 'gradingScale', 'course', 'career', 'group', 'subject', 'grades'];
 
-    public function show(GradeSheet $gradeSheet) { return $this->showRecord($gradeSheet); }
-    public function destroy(GradeSheet $gradeSheet) { return $this->destroyRecord($gradeSheet); }
-
-    public function store(Request $request): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $validated = $this->hydrateFromOffering($request->validate($this->rules()));
+        $this->authorize('viewAny', GradeSheet::class);
+
+        return parent::index($request);
+    }
+
+    public function show(GradeSheet $gradeSheet)
+    {
+        $this->authorize('view', $gradeSheet);
+
+        return $this->showRecord($gradeSheet);
+    }
+
+    public function destroy(GradeSheet $gradeSheet)
+    {
+        $this->authorize('delete', $gradeSheet);
+
+        return $this->destroyRecord($gradeSheet);
+    }
+
+    public function store(StoreGradeSheetRequest $request): JsonResponse
+    {
+        $validated = $this->hydrateFromOffering($request->validated());
         $gradeSheet = GradeSheet::create($validated);
         $this->recordStatusChange($gradeSheet, null, $gradeSheet->status, $request);
 
         return response()->json($gradeSheet->load($this->relations), 201);
     }
 
-    public function update(Request $request, GradeSheet $gradeSheet): JsonResponse
+    public function update(UpdateGradeSheetRequest $request, GradeSheet $gradeSheet): JsonResponse
     {
         $previousStatus = $gradeSheet->status;
-        $gradeSheet->update($this->hydrateFromOffering($request->validate($this->rules($gradeSheet))));
+        $gradeSheet->update($this->hydrateFromOffering($request->validated()));
         $this->recordStatusChange($gradeSheet, $previousStatus, $gradeSheet->status, $request);
 
         return response()->json($gradeSheet->fresh()->load($this->relations));
@@ -38,6 +58,8 @@ class GradeSheetController extends ApiController
 
     public function submit(Request $request, GradeSheet $gradeSheet): JsonResponse
     {
+        $this->authorize('submit', $gradeSheet);
+
         $this->transition($request, $gradeSheet, ['draft', 'reopened'], 'submitted', ['submitted_at' => now()]);
 
         return response()->json($gradeSheet->fresh()->load($this->relations));
@@ -45,6 +67,8 @@ class GradeSheetController extends ApiController
 
     public function sign(Request $request, GradeSheet $gradeSheet): JsonResponse
     {
+        $this->authorize('sign', $gradeSheet);
+
         $payload = $request->validate([
             'signature_secret' => ['nullable', 'string', 'max:255'],
             'status_reason' => ['nullable', 'string', 'max:255'],
@@ -68,6 +92,8 @@ class GradeSheetController extends ApiController
 
     public function close(Request $request, GradeSheet $gradeSheet): JsonResponse
     {
+        $this->authorize('close', $gradeSheet);
+
         $this->transition($request, $gradeSheet, ['signed'], 'closed', [
             'closed_at' => now(),
             'closed_by_user_id' => $request->user()?->id,

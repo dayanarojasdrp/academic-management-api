@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\StatusHistory;
 use App\Support\ApiQuery;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -26,7 +27,14 @@ abstract class ApiController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate($this->rules());
+        return $this->storeRecord($request);
+    }
+
+    protected function storeRecord(Request $request): JsonResponse
+    {
+        $validated = $request instanceof FormRequest
+            ? $request->validated()
+            : $request->validate($this->rules());
         $record = new $this->modelClass();
         $record->fill(array_intersect_key($validated, array_flip($record->getFillable())));
         $record->save();
@@ -44,7 +52,9 @@ abstract class ApiController extends Controller
     protected function updateRecord(Request $request, Model $record): JsonResponse
     {
         $previousStatus = $record->getAttribute('status');
-        $validated = $request->validate($this->rules($record));
+        $validated = $request instanceof FormRequest
+            ? $request->validated()
+            : $request->validate($this->rules($record));
         $record->fill(array_intersect_key($validated, array_flip($record->getFillable())));
         $record->save();
         $this->afterSave($record, $request);

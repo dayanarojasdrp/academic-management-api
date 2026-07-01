@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\Academic\PaymentVerifier;
+use App\Http\Requests\Students\StoreStudentRequest;
+use App\Http\Requests\Students\UpdateStudentRequest;
 use App\Http\Resources\StudentResource;
 use App\Models\Student;
 use App\Services\Academic\AcademicHistoryService;
@@ -20,6 +22,8 @@ class StudentController extends ApiController
 
     public function index(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', Student::class);
+
         $query = Student::query()
             ->with(['group:id,name,course_id,career_id', 'currentEnrollment:id,student_id,start_course_id,status'])
             ->orderBy('last_name')
@@ -35,9 +39,29 @@ class StudentController extends ApiController
         return StudentResource::collection(ApiQuery::paginate($query, $request))->response();
     }
 
-    public function show(Student $student) { return $this->showRecord($student); }
-    public function update(Request $request, Student $student) { return $this->updateRecord($request, $student); }
-    public function destroy(Student $student) { return $this->destroyRecord($student); }
+    public function store(StoreStudentRequest $request): JsonResponse
+    {
+        return $this->storeRecord($request);
+    }
+
+    public function show(Student $student)
+    {
+        $this->authorize('view', $student);
+
+        return $this->showRecord($student);
+    }
+
+    public function update(UpdateStudentRequest $request, Student $student)
+    {
+        return $this->updateRecord($request, $student);
+    }
+
+    public function destroy(Student $student)
+    {
+        $this->authorize('delete', $student);
+
+        return $this->destroyRecord($student);
+    }
 
     protected function rules(?Model $record = null): array
     {
@@ -61,6 +85,8 @@ class StudentController extends ApiController
 
     public function paymentStatus(Student $student, PaymentVerifier $paymentVerifier): JsonResponse
     {
+        $this->authorize('view', $student);
+
         $courseId = request()->integer('course_id') ?: null;
 
         return response()->json([
@@ -74,6 +100,8 @@ class StudentController extends ApiController
 
     public function academicSummary(Student $student, AcademicHistoryService $academicHistoryService): JsonResponse
     {
+        $this->authorize('viewAcademicHistory', $student);
+
         return response()->json($academicHistoryService->summary($student));
     }
 
@@ -82,6 +110,8 @@ class StudentController extends ApiController
         Request $request,
         AcademicHistoryService $academicHistoryService
     ): JsonResponse {
+        $this->authorize('viewAcademicHistory', $student);
+
         return response()->json($academicHistoryService->subjectHistory($student, $request));
     }
 
@@ -90,6 +120,8 @@ class StudentController extends ApiController
         Request $request,
         AcademicHistoryService $academicHistoryService
     ): JsonResponse {
+        $this->authorize('viewAcademicHistory', $student);
+
         return response()->json($academicHistoryService->kardex($student, $request));
     }
 
@@ -98,6 +130,8 @@ class StudentController extends ApiController
         Request $request,
         AcademicHistoryService $academicHistoryService
     ): JsonResponse {
+        $this->authorize('viewAcademicHistory', $student);
+
         return response()->json($academicHistoryService->grades($student, $request));
     }
 }

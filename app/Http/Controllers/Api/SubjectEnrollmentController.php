@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\Academic\RegisterSubjectEnrollment;
+use App\Http\Requests\SubjectEnrollments\StoreSubjectEnrollmentRequest;
+use App\Http\Requests\SubjectEnrollments\UpdateSubjectEnrollmentRequest;
 use App\Http\Resources\SubjectEnrollmentResource;
 use App\Models\SubjectEnrollment;
 use Illuminate\Database\Eloquent\Model;
@@ -15,13 +17,35 @@ class SubjectEnrollmentController extends ApiController
 
     protected array $relations = ['enrollment', 'student', 'subject', 'subjectOffering.schedules', 'curriculumPlan', 'course', 'career', 'group', 'grades'];
 
-    public function show(SubjectEnrollment $subjectEnrollment) { return $this->showRecord($subjectEnrollment); }
-    public function update(Request $request, SubjectEnrollment $subjectEnrollment) { return $this->updateRecord($request, $subjectEnrollment); }
-    public function destroy(SubjectEnrollment $subjectEnrollment) { return $this->destroyRecord($subjectEnrollment); }
-
-    public function store(Request $request, RegisterSubjectEnrollment $registerSubjectEnrollment): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $validated = $request->validate($this->rules());
+        $this->authorize('viewAny', SubjectEnrollment::class);
+
+        return parent::index($request);
+    }
+
+    public function show(SubjectEnrollment $subjectEnrollment)
+    {
+        $this->authorize('view', $subjectEnrollment);
+
+        return $this->showRecord($subjectEnrollment);
+    }
+
+    public function update(UpdateSubjectEnrollmentRequest $request, SubjectEnrollment $subjectEnrollment)
+    {
+        return $this->updateRecord($request, $subjectEnrollment);
+    }
+
+    public function destroy(SubjectEnrollment $subjectEnrollment)
+    {
+        $this->authorize('delete', $subjectEnrollment);
+
+        return $this->destroyRecord($subjectEnrollment);
+    }
+
+    public function store(StoreSubjectEnrollmentRequest $request, RegisterSubjectEnrollment $registerSubjectEnrollment): JsonResponse
+    {
+        $validated = $request->validated();
         $subjectEnrollment = $registerSubjectEnrollment->handle($validated);
         $this->recordStatusChange($subjectEnrollment, null, $subjectEnrollment->status, $request);
 
