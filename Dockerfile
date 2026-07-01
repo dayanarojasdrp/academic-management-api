@@ -20,7 +20,12 @@ RUN apk add --no-cache \
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 COPY composer.json composer.lock ./
-RUN composer install --no-interaction --prefer-dist --optimize-autoloader --no-scripts
+ARG INSTALL_DEV=false
+RUN if [ "$INSTALL_DEV" = "true" ]; then \
+        composer install --no-interaction --prefer-dist --optimize-autoloader --no-scripts; \
+    else \
+        composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts; \
+    fi
 
 COPY . .
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint

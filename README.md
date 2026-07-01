@@ -62,6 +62,20 @@ docker compose logs -f mysql
 Tests:
 
 ```bash
+composer run test:smoke
+```
+
+Full PHPUnit suite, after installing dev dependencies:
+
+```bash
+composer install
+php artisan test
+```
+
+Inside Docker:
+
+```bash
+docker compose exec app composer run test:smoke
 docker compose exec app composer install
 docker compose exec app php artisan test
 ```
@@ -140,6 +154,7 @@ LOG_LEVEL=info
 ```bash
 php artisan route:list --path=api
 php artisan migrate:fresh --seed
+composer run test:smoke
 php artisan test
 php artisan config:clear
 php artisan cache:clear
@@ -150,6 +165,7 @@ With Docker:
 ```bash
 docker compose exec app php artisan route:list --path=api
 docker compose exec app php artisan migrate:fresh --seed
+docker compose exec app composer run test:smoke
 docker compose exec app php artisan test
 ```
 

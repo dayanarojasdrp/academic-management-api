@@ -79,6 +79,21 @@ View logs:
 docker compose logs -f app
 ```
 
+## Local Verification
+
+Run the smoke test without requiring PHPUnit:
+
+```bash
+composer run test:smoke
+```
+
+Run the full suite after dev dependencies are available:
+
+```bash
+composer install
+php artisan test
+```
+
 ## MySQL Compatibility Notes
 
 Dashboard date calculations use database-driver-specific SQL. MySQL uses:

@@ -27,6 +27,16 @@ Gradebook:
 
 ## How To Run
 
+Smoke test that works with production dependencies:
+
+```bash
+composer run test:smoke
+```
+
+It verifies Laravel bootstrapping, migrations, seed data, API route count and PDF generation using a temporary SQLite database.
+
+Full Feature suite:
+
 ```bash
 composer install
 php artisan test --testsuite=Feature
@@ -51,4 +61,4 @@ The verification currently loads 173 API routes and seeds the baseline academic 
 
 Feature tests require the dev dependencies from Composer, especially PHPUnit and Laravel's testing tooling. If the local install was made with `--no-dev`, run a full `composer install` before executing `php artisan test --testsuite=Feature`.
 
-In this local verification, production dependencies installed correctly, but the full dev dependency install stalled while downloading `laravel/pint`; therefore `php artisan test` is still unavailable in this machine until Composer completes the dev install.
+In this local verification, production dependencies installed correctly and `composer run test:smoke` passes. The full dev dependency install still stalls during GitHub/Packagist downloads in this machine, therefore `php artisan test` is unavailable until Composer completes the dev install.
