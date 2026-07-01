@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Actions\Academic\GradebookService;
 use App\Models\Grade;
+use App\Models\GradeAuditLog;
 use App\Support\ApiQuery;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
@@ -93,18 +94,49 @@ class GradeController extends ApiController
         $this->authorize('update', $grade);
 
         $validated = $request->validate($this->rules($grade));
+        $gradeChangeRequested = array_key_exists('value', $validated)
+            || array_key_exists('raw_value', $validated)
+            || (array_key_exists('status', $validated) && $validated['status'] !== $grade->status);
+
+        if ($gradeChangeRequested && empty($validated['change_reason'])) {
+            return response()->json([
+                'message' => 'Debe enviar change_reason para modificar una calificacion o su estado.',
+                'errors' => ['change_reason' => ['Debe enviar change_reason para modificar una calificacion o su estado.']],
+            ], 422);
+        }
 
         $grade = DB::transaction(function () use ($request, $validated, $grade, $gradebookService): Grade {
             $previousStatus = $grade->status;
+            $previousValue = $grade->value;
             $grade->fill($gradebookService->prepare($validated, $grade));
             $grade->save();
             $gradebookService->closeImpactedSubjectEnrollment($grade->fresh(['gradingScale', 'subjectEnrollment']));
             $this->recordStatusChange($grade, $previousStatus, $grade->status, $request);
 
+            if ((string) $previousValue !== (string) $grade->value || $previousStatus !== $grade->status) {
+                GradeAuditLog::create([
+                    'grade_id' => $grade->id,
+                    'old_grade' => $previousValue,
+                    'new_grade' => $grade->value,
+                    'old_status' => $previousStatus,
+                    'new_status' => $grade->status,
+                    'reason' => $validated['change_reason'],
+                    'changed_by_user_id' => $request->user()?->id,
+                    'changed_at' => now(),
+                ]);
+            }
+
             return $grade;
         });
 
         return response()->json($grade->fresh()->load($this->relations));
+    }
+
+    public function auditLogs(Grade $grade): JsonResponse
+    {
+        $this->authorize('view', $grade);
+
+        return response()->json($grade->auditLogs()->with('changedBy:id,name,email')->orderByDesc('changed_at')->paginate(50));
     }
 
     protected function rules(?Model $record = null): array

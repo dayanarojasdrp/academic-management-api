@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\SubjectOffering;
+use App\Support\ApiQuery;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class SubjectOfferingController extends ApiController
@@ -15,6 +17,17 @@ class SubjectOfferingController extends ApiController
     public function show(SubjectOffering $subjectOffering) { return $this->showRecord($subjectOffering); }
     public function update(Request $request, SubjectOffering $subjectOffering) { return $this->updateRecord($request, $subjectOffering); }
     public function destroy(SubjectOffering $subjectOffering) { return $this->destroyRecord($subjectOffering); }
+
+    public function students(SubjectOffering $subjectOffering, Request $request): JsonResponse
+    {
+        $query = $subjectOffering->subjectEnrollments()
+            ->whereIn('subject_enrollments.status', ['enrolled', 'active', 'passed', 'failed'])
+            ->whereHas('enrollment', fn ($query) => $query->whereIn('status', ['active', 'enrolled']))
+            ->with(['student:id,student_code,first_name,last_name,email,status', 'enrollment:id,status,enrollment_date'])
+            ->orderBy('student_id');
+
+        return response()->json(ApiQuery::paginate($query, $request));
+    }
 
     protected function rules(?Model $record = null): array
     {

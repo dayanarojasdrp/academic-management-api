@@ -6,6 +6,7 @@ use App\Models\Concerns\HasStatusHistory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Grade extends Model
 {
@@ -95,5 +96,10 @@ class Grade extends Model
     public function subjectEnrollment(): BelongsTo
     {
         return $this->belongsTo(SubjectEnrollment::class);
+    }
+
+    public function auditLogs(): HasMany
+    {
+        return $this->hasMany(GradeAuditLog::class);
     }
 }

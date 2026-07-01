@@ -8,6 +8,7 @@ use App\Models\Enrollment;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class EnrollmentController extends ApiController
 {
@@ -58,6 +59,29 @@ class EnrollmentController extends ApiController
         return $this->destroyRecord($enrollment);
     }
 
+    public function submit(Request $request, Enrollment $enrollment): JsonResponse
+    {
+        return $this->transition($request, $enrollment, ['draft', 'pending'], 'pending_payment');
+    }
+
+    public function confirmPayment(Request $request, Enrollment $enrollment): JsonResponse
+    {
+        return $this->transition($request, $enrollment, ['pending_payment', 'pending'], 'payment_confirmed');
+    }
+
+    public function activate(Request $request, Enrollment $enrollment): JsonResponse
+    {
+        $response = $this->transition($request, $enrollment, ['payment_confirmed', 'pending_payment', 'active'], 'active');
+        $enrollment->student()->update(['status' => 'active', 'current_enrollment_id' => $enrollment->id]);
+
+        return $response;
+    }
+
+    public function cancel(Request $request, Enrollment $enrollment): JsonResponse
+    {
+        return $this->transition($request, $enrollment, ['draft', 'pending', 'pending_payment', 'payment_confirmed', 'active'], 'cancelled');
+    }
+
     protected function rules(?Model $record = null): array
     {
         return [
@@ -68,5 +92,20 @@ class EnrollmentController extends ApiController
             'status' => ['nullable', 'string', 'max:30'],
             'notes' => ['nullable', 'string'],
         ];
+    }
+
+    private function transition(Request $request, Enrollment $enrollment, array $allowedFrom, string $status): JsonResponse
+    {
+        if (! in_array($enrollment->status, $allowedFrom, true)) {
+            throw ValidationException::withMessages([
+                'status' => 'La matricula no puede pasar de '.$enrollment->status.' a '.$status.'.',
+            ]);
+        }
+
+        $previousStatus = $enrollment->status;
+        $enrollment->update(['status' => $status]);
+        $this->recordStatusChange($enrollment, $previousStatus, $status, $request);
+
+        return response()->json($enrollment->fresh()->load($this->relations));
     }
 }

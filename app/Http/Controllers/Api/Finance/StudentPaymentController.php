@@ -30,6 +30,39 @@ class StudentPaymentController extends ApiController
     public function update(Request $request, StudentPayment $studentPayment) { return $this->updateRecord($request, $studentPayment); }
     public function destroy(StudentPayment $studentPayment) { return $this->destroyRecord($studentPayment); }
 
+    public function validatePayment(Request $request, StudentPayment $studentPayment): JsonResponse
+    {
+        $previousStatus = $studentPayment->status;
+        $studentPayment->update([
+            'status' => 'confirmed',
+            'received_by' => $request->user()?->id ?? $studentPayment->received_by,
+            'paid_at' => $studentPayment->paid_at ?? now(),
+        ]);
+        $this->recordStatusChange($studentPayment, $previousStatus, 'confirmed', $request);
+
+        if ($studentPayment->enrollment) {
+            $previousEnrollmentStatus = $studentPayment->enrollment->status;
+            $studentPayment->enrollment->update(['status' => 'active']);
+            $this->recordStatusChange($studentPayment->enrollment, $previousEnrollmentStatus, 'active', $request);
+            $studentPayment->student()->update(['status' => 'active', 'current_enrollment_id' => $studentPayment->enrollment_id]);
+        }
+
+        return response()->json($studentPayment->fresh()->load($this->relations));
+    }
+
+    public function reject(Request $request, StudentPayment $studentPayment): JsonResponse
+    {
+        $payload = $request->validate(['reason' => ['required', 'string', 'max:255']]);
+        $previousStatus = $studentPayment->status;
+        $studentPayment->update([
+            'status' => 'rejected',
+            'notes' => trim(($studentPayment->notes ? $studentPayment->notes."\n" : '').'Rechazado: '.$payload['reason']),
+        ]);
+        $this->recordStatusChange($studentPayment, $previousStatus, 'rejected', $request);
+
+        return response()->json($studentPayment->fresh()->load($this->relations));
+    }
+
     protected function rules(?Model $record = null): array
     {
         return [

@@ -12,8 +12,10 @@ use App\Http\Controllers\Api\Attendance\AttendanceSummaryController;
 use App\Http\Controllers\Api\Attendance\ClassSessionController;
 use App\Http\Controllers\Api\CampusController;
 use App\Http\Controllers\Api\CareerController;
+use App\Http\Controllers\Api\CertificateController;
 use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\CurriculumPlanController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DepartmentController;
 use App\Http\Controllers\Api\EnrollmentController;
 use App\Http\Controllers\Api\FacultyController;
@@ -46,6 +48,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/health', fn () => ['status' => 'ok']);
 Route::post('auth/login', [AuthController::class, 'login']);
+Route::get('certificates/verify/{verificationCode}', [CertificateController::class, 'verify']);
 
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('auth/me', [AuthController::class, 'me']);
@@ -59,14 +62,27 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('careers/{career}/subject-enrollments', [CareerController::class, 'subjectEnrollments'])->middleware('permission:reports.academic.view');
     Route::get('courses/{course}/subject-enrollments', [CourseController::class, 'subjectEnrollments'])->middleware('permission:reports.academic.view');
     Route::get('groups/{group}/students', [GroupController::class, 'students'])->middleware('permission:students.view');
+    Route::get('students/check-duplicate', [StudentController::class, 'checkDuplicate'])->middleware('permission:students.view,students.manage,admissions.manage');
     Route::get('students/{student}/payment-status', [StudentController::class, 'paymentStatus'])->middleware('permission:finances.view,enrollments.create');
     Route::get('students/{student}/financial-clearance', [FinancialClearanceController::class, 'show'])->middleware('permission:finances.view,enrollments.create');
     Route::get('students/{student}/academic-summary', [StudentController::class, 'academicSummary'])->middleware('permission:academic_history.view');
     Route::get('students/{student}/academic-history', [StudentController::class, 'academicHistory'])->middleware('permission:academic_history.view');
     Route::get('students/{student}/kardex', [StudentController::class, 'kardex'])->middleware('permission:academic_history.view');
+    Route::get('students/{student}/transcript', [StudentController::class, 'transcript'])->middleware('permission:academic_history.view');
+    Route::get('students/{student}/gpa', [StudentController::class, 'gpa'])->middleware('permission:academic_history.view');
     Route::get('students/{student}/grades', [StudentController::class, 'grades'])->middleware('permission:grades.view,academic_history.view');
+    Route::get('students/{student}/certificates', [CertificateController::class, 'forStudent'])->middleware('permission:reports.academic.view,academic_history.view');
+    Route::get('dashboard/metrics', [DashboardController::class, 'metrics'])->middleware('permission:reports.academic.view,reports.finance.view');
     Route::patch('finances/{finance}/mark-paid', [FinanceController::class, 'markPaid'])->middleware('permission:finances.payments.validate');
     Route::post('student-charges/{studentCharge}/adjustments', [StudentChargeController::class, 'adjust'])->middleware('permission:finances.manage');
+    Route::post('enrollments/{enrollment}/submit', [EnrollmentController::class, 'submit'])->middleware('permission:enrollments.create,enrollments.manage');
+    Route::post('enrollments/{enrollment}/cancel', [EnrollmentController::class, 'cancel'])->middleware('permission:enrollments.manage');
+    Route::post('enrollments/{enrollment}/confirm-payment', [EnrollmentController::class, 'confirmPayment'])->middleware('permission:enrollments.manage,finances.payments.validate');
+    Route::post('enrollments/{enrollment}/activate', [EnrollmentController::class, 'activate'])->middleware('permission:enrollments.manage');
+    Route::post('student-payments/{studentPayment}/validate', [StudentPaymentController::class, 'validatePayment'])->middleware('permission:finances.payments.validate');
+    Route::post('student-payments/{studentPayment}/reject', [StudentPaymentController::class, 'reject'])->middleware('permission:finances.payments.validate');
+    Route::post('payments/{studentPayment}/validate', [StudentPaymentController::class, 'validatePayment'])->middleware('permission:finances.payments.validate');
+    Route::post('payments/{studentPayment}/reject', [StudentPaymentController::class, 'reject'])->middleware('permission:finances.payments.validate');
     Route::post('applicants/{applicant}/submit', [ApplicantController::class, 'submit'])->middleware('permission:admissions.manage');
     Route::post('applicants/{applicant}/convert-to-student', [ApplicantController::class, 'convert'])->middleware('permission:admissions.manage,students.manage');
     Route::post('class-sessions/{classSession}/generate-attendance', [ClassSessionController::class, 'generateRecords'])->middleware('permission:attendance.manage');
@@ -74,6 +90,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     Route::apiResource('careers', CareerController::class)->only(['index', 'show'])->middleware('permission:catalogs.view,catalogs.manage');
     Route::apiResource('careers', CareerController::class)->except(['index', 'show'])->middleware('permission:catalogs.manage');
+    Route::apiResource('programs', CareerController::class)->only(['index', 'show'])->middleware('permission:catalogs.view,catalogs.manage');
+    Route::apiResource('programs', CareerController::class)->except(['index', 'show'])->middleware('permission:catalogs.manage');
     Route::apiResource('institutions', InstitutionController::class)->only(['index', 'show'])->middleware('permission:catalogs.view,catalogs.manage');
     Route::apiResource('institutions', InstitutionController::class)->except(['index', 'show'])->middleware('permission:catalogs.manage');
     Route::apiResource('campuses', CampusController::class)->only(['index', 'show'])->middleware('permission:catalogs.view,catalogs.manage');
@@ -86,6 +104,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::apiResource('modalities', ModalityController::class)->except(['index', 'show'])->middleware('permission:catalogs.manage');
     Route::apiResource('courses', CourseController::class)->only(['index', 'show'])->middleware('permission:catalogs.view,catalogs.manage');
     Route::apiResource('courses', CourseController::class)->except(['index', 'show'])->middleware('permission:catalogs.manage');
+    Route::apiResource('academic-periods', CourseController::class)->only(['index', 'show'])->middleware('permission:catalogs.view,catalogs.manage');
+    Route::apiResource('academic-periods', CourseController::class)->except(['index', 'show'])->middleware('permission:catalogs.manage');
     Route::apiResource('subjects', SubjectController::class)->only(['index', 'show'])->middleware('permission:catalogs.view,catalogs.manage');
     Route::apiResource('subjects', SubjectController::class)->except(['index', 'show'])->middleware('permission:catalogs.manage');
     Route::apiResource('curriculum-plans', CurriculumPlanController::class)->only(['index', 'show'])->middleware('permission:curriculum.view,curriculum.manage');
@@ -134,6 +154,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
         ->parameters(['student-payments' => 'studentPayment'])
         ->except(['index', 'show'])
         ->middleware('permission:finances.payments.validate,finances.manage');
+    Route::apiResource('payments', StudentPaymentController::class)
+        ->parameters(['payments' => 'studentPayment'])
+        ->middleware('permission:finances.view,finances.payments.validate,finances.manage');
     Route::apiResource('financial-holds', FinancialHoldController::class)
         ->parameters(['financial-holds' => 'financialHold'])
         ->only(['index', 'show'])
@@ -144,6 +167,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
         ->middleware('permission:finances.manage');
     Route::apiResource('professors', ProfessorController::class)->only(['index', 'show'])->middleware('permission:professors.view,professors.manage');
     Route::apiResource('professors', ProfessorController::class)->except(['index', 'show'])->middleware('permission:professors.manage');
+    Route::apiResource('teachers', ProfessorController::class)->only(['index', 'show'])->middleware('permission:professors.view,professors.manage');
+    Route::apiResource('teachers', ProfessorController::class)->except(['index', 'show'])->middleware('permission:professors.manage');
     Route::apiResource('subject-enrollments', SubjectEnrollmentController::class)->only(['index', 'show'])->middleware('permission:subject_enrollments.view,subject_enrollments.manage');
     Route::apiResource('subject-enrollments', SubjectEnrollmentController::class)->except(['index', 'show'])->middleware('permission:subject_enrollments.manage');
     Route::apiResource('subject-offerings', SubjectOfferingController::class)
@@ -154,6 +179,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
         ->parameters(['subject-offerings' => 'subjectOffering'])
         ->except(['index', 'show'])
         ->middleware('permission:subject_enrollments.manage');
+    Route::get('subject-offerings/{subjectOffering}/students', [SubjectOfferingController::class, 'students'])->middleware('permission:subject_enrollments.view,students.view');
+    Route::get('course-groups/{subjectOffering}/students', [SubjectOfferingController::class, 'students'])->middleware('permission:subject_enrollments.view,students.view');
+    Route::apiResource('course-groups', SubjectOfferingController::class)
+        ->parameters(['course-groups' => 'subjectOffering'])
+        ->middleware('permission:subject_enrollments.view,subject_enrollments.manage');
     Route::apiResource('subject-offering-schedules', SubjectOfferingScheduleController::class)
         ->parameters(['subject-offering-schedules' => 'subjectOfferingSchedule'])
         ->middleware('permission:subject_enrollments.manage');
@@ -211,6 +241,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
         ->middleware('permission:grades.view,grades.manage');
     Route::apiResource('grades', GradeController::class)->only(['index', 'show'])->middleware('permission:grades.view,grades.manage');
     Route::apiResource('grades', GradeController::class)->except(['index', 'show'])->middleware('permission:grades.manage');
+    Route::get('grades/{grade}/audit-logs', [GradeController::class, 'auditLogs'])->middleware('permission:grades.view,grades.manage,audit.view');
+    Route::post('certificates/generate', [CertificateController::class, 'generate'])->middleware('permission:reports.academic.view,academic_history.view');
+    Route::get('certificates/{certificate}/download', [CertificateController::class, 'download'])->middleware('permission:reports.academic.view,academic_history.view');
+    Route::apiResource('certificates', CertificateController::class)->only(['index', 'show', 'update', 'destroy'])->middleware('permission:reports.academic.view,academic_history.view');
     Route::prefix('reports')->group(function (): void {
         Route::get('enrollment-by-period', [AcademicReportController::class, 'enrollmentByPeriod'])->middleware('permission:reports.academic.view');
         Route::get('grades-by-group', [AcademicReportController::class, 'gradesByGroup'])->middleware('permission:reports.academic.view');

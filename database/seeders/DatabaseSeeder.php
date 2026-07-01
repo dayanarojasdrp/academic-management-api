@@ -9,6 +9,7 @@ use App\Models\AdmissionInterview;
 use App\Models\Applicant;
 use App\Models\ApplicationDocument;
 use App\Models\AttendanceRecord;
+use App\Models\Certificate;
 use App\Models\ClassSession;
 use App\Models\Course;
 use App\Models\CurriculumPlan;
@@ -18,6 +19,7 @@ use App\Models\Faculty;
 use App\Models\Finance;
 use App\Models\FinancialConcept;
 use App\Models\Grade;
+use App\Models\GradeAuditLog;
 use App\Models\GradeComponent;
 use App\Models\GradeSheet;
 use App\Models\Group;
@@ -345,7 +347,7 @@ class DatabaseSeeder extends Seeder
             'status' => 'enrolled',
         ]);
 
-        Grade::create([
+        $grade = Grade::create([
             'subject_enrollment_id' => $subjectEnrollment->id,
             'student_id' => $student->id,
             'subject_id' => $subjects->last()->id,
@@ -365,6 +367,38 @@ class DatabaseSeeder extends Seeder
             'evaluated_at' => '2026-12-15',
             'published_at' => '2026-12-15 10:00:00',
             'status' => 'published',
+        ]);
+
+        GradeAuditLog::create([
+            'grade_id' => $grade->id,
+            'old_grade' => null,
+            'new_grade' => 95,
+            'old_status' => null,
+            'new_status' => 'published',
+            'reason' => 'Carga inicial de nota demo.',
+            'changed_at' => '2026-12-15 10:00:00',
+        ]);
+
+        Certificate::create([
+            'certificate_code' => 'CERT-20261215-00001',
+            'student_id' => $student->id,
+            'type' => 'active_student_certificate',
+            'course_id' => $course->id,
+            'enrollment_id' => $enrollment->id,
+            'generated_at' => '2026-12-15 11:00:00',
+            'verification_code' => 'CERTVERIFYDEMO000000000001',
+            'status' => 'generated',
+            'snapshot_data' => [
+                'student' => [
+                    'student_code' => $student->student_code,
+                    'first_name' => $student->first_name,
+                    'last_name' => $student->last_name,
+                    'status' => $student->status,
+                ],
+                'career' => ['name' => $career->name, 'abbreviation' => $career->abbreviation],
+                'course' => ['name' => $course->name],
+                'issued_at' => '2026-12-15T11:00:00Z',
+            ],
         ]);
 
         $applicant = Applicant::create([

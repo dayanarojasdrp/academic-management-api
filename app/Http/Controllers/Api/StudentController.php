@@ -136,4 +136,69 @@ class StudentController extends ApiController
 
         return response()->json($academicHistoryService->grades($student, $request));
     }
+
+    public function checkDuplicate(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'document_number' => ['nullable', 'string', 'max:80'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'ignore_student_id' => ['nullable', 'exists:students,id'],
+        ]);
+
+        if (empty($validated['document_number']) && empty($validated['email'])) {
+            return response()->json([
+                'duplicate' => false,
+                'matches' => [],
+                'message' => 'Enviar document_number o email para revisar duplicados.',
+            ]);
+        }
+
+        $query = Student::query();
+        if (! empty($validated['ignore_student_id'])) {
+            $query->whereKeyNot($validated['ignore_student_id']);
+        }
+
+        $query->where(function ($query) use ($validated): void {
+            if (! empty($validated['document_number'])) {
+                $query->orWhere('document_number', $validated['document_number']);
+            }
+
+            if (! empty($validated['email'])) {
+                $query->orWhere('email', $validated['email']);
+            }
+        });
+
+        $matches = $query->get(['id', 'student_code', 'first_name', 'last_name', 'document_number', 'email', 'status']);
+
+        return response()->json([
+            'duplicate' => $matches->isNotEmpty(),
+            'matches' => $matches,
+        ]);
+    }
+
+    public function transcript(
+        Student $student,
+        Request $request,
+        AcademicHistoryService $academicHistoryService
+    ): JsonResponse {
+        return $this->kardex($student, $request, $academicHistoryService);
+    }
+
+    public function gpa(
+        Student $student,
+        AcademicHistoryService $academicHistoryService
+    ): JsonResponse {
+        $this->authorize('viewAcademicHistory', $student);
+
+        $summary = $academicHistoryService->summary($student);
+
+        return response()->json([
+            'student_id' => $student->id,
+            'student_code' => $student->student_code,
+            'gpa' => $summary['average_grade'] ?? null,
+            'passed_subjects' => $summary['passed_subjects'] ?? 0,
+            'failed_subjects' => $summary['failed_subjects'] ?? 0,
+            'summary' => $summary,
+        ]);
+    }
 }
