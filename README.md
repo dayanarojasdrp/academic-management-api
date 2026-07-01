@@ -5,6 +5,7 @@ API REST en Laravel para una aplicacion de gestion academica de una institucion 
 ## Modulos iniciales
 
 - Estudiantes: codigo unico, nombres, apellidos, carnet/pasaporte, estado, grupo y matricula actual.
+- Estructura institucional: instituciones, sedes, facultades, departamentos y modalidades.
 - Carreras: nombre, abreviatura y descripcion.
 - Cursos: nombre, fechas de inicio/fin y estado.
 - Matriculas: estudiante, curso de inicio, curso de fin opcional, fecha y estado.
@@ -37,6 +38,11 @@ Todos los recursos tienen operaciones REST: `GET`, `POST`, `GET /{id}`, `PUT/PAT
 
 ```text
 /api/careers
+/api/institutions
+/api/campuses
+/api/faculties
+/api/departments
+/api/modalities
 /api/courses
 /api/subjects
 /api/curriculum-plans
@@ -57,6 +63,7 @@ La guia completa para frontend esta en [docs/API.md](docs/API.md).
 Las decisiones de arquitectura y rendimiento estan en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 La autenticacion, roles y permisos estan en [docs/AUTHORIZATION.md](docs/AUTHORIZATION.md).
 El patron de Form Requests y Policies esta en [docs/REQUESTS_POLICIES.md](docs/REQUESTS_POLICIES.md).
+La estructura institucional multi-sede esta en [docs/INSTITUTIONAL_STRUCTURE.md](docs/INSTITUTIONAL_STRUCTURE.md).
 El flujo financiero de produccion esta en [docs/FINANCE.md](docs/FINANCE.md).
 La validacion de ofertas y matricula de asignaturas esta en [docs/SUBJECT_ENROLLMENT.md](docs/SUBJECT_ENROLLMENT.md).
 El flujo de calificaciones, actas y cierre academico esta en [docs/GRADEBOOK.md](docs/GRADEBOOK.md).

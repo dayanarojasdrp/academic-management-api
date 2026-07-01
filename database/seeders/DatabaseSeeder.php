@@ -3,9 +3,12 @@
 namespace Database\Seeders;
 
 use App\Models\Career;
+use App\Models\Campus;
 use App\Models\Course;
 use App\Models\CurriculumPlan;
+use App\Models\Department;
 use App\Models\Enrollment;
+use App\Models\Faculty;
 use App\Models\Finance;
 use App\Models\FinancialConcept;
 use App\Models\Grade;
@@ -14,6 +17,8 @@ use App\Models\GradeSheet;
 use App\Models\Group;
 use App\Models\GradingScale;
 use App\Models\GradingScaleLevel;
+use App\Models\Institution;
+use App\Models\Modality;
 use App\Models\PaymentAllocation;
 use App\Models\PaymentReceipt;
 use App\Models\Professor;
@@ -42,13 +47,63 @@ class DatabaseSeeder extends Seeder
         $permissions = $this->seedPermissions();
         $roles = $this->seedRoles($permissions);
 
+        $institution = Institution::create([
+            'code' => 'CME',
+            'name' => 'Centro Misionero Escambray',
+            'legal_name' => 'Centro Misionero Escambray',
+            'country' => 'Cuba',
+            'timezone' => 'America/Havana',
+            'status' => 'active',
+        ]);
+
+        $campus = Campus::create([
+            'institution_id' => $institution->id,
+            'code' => 'MAIN',
+            'name' => 'Sede Central',
+            'city' => 'La Habana',
+            'country' => 'Cuba',
+            'status' => 'active',
+        ]);
+
+        $faculty = Faculty::create([
+            'institution_id' => $institution->id,
+            'campus_id' => $campus->id,
+            'code' => 'FING',
+            'name' => 'Facultad de Ingenieria',
+            'status' => 'active',
+        ]);
+
+        $department = Department::create([
+            'institution_id' => $institution->id,
+            'faculty_id' => $faculty->id,
+            'campus_id' => $campus->id,
+            'code' => 'DSW',
+            'name' => 'Departamento de Software',
+            'status' => 'active',
+        ]);
+
+        $modality = Modality::create([
+            'institution_id' => $institution->id,
+            'code' => 'PRESENCIAL',
+            'name' => 'Presencial',
+            'requires_classroom' => true,
+            'requires_online_platform' => false,
+            'status' => 'active',
+        ]);
+
         $career = Career::create([
+            'institution_id' => $institution->id,
+            'faculty_id' => $faculty->id,
+            'department_id' => $department->id,
+            'modality_id' => $modality->id,
             'name' => 'Ingenieria Informatica',
             'abbreviation' => 'INF',
             'description' => 'Carrera orientada al desarrollo de software y sistemas de informacion.',
         ]);
 
         $course = Course::create([
+            'institution_id' => $institution->id,
+            'campus_id' => $campus->id,
             'name' => 'Curso 2026-2027',
             'start_date' => '2026-09-01',
             'end_date' => '2027-07-31',
@@ -75,6 +130,11 @@ class DatabaseSeeder extends Seeder
         ]));
 
         $group = Group::create([
+            'institution_id' => $institution->id,
+            'campus_id' => $campus->id,
+            'faculty_id' => $faculty->id,
+            'department_id' => $department->id,
+            'modality_id' => $modality->id,
             'course_id' => $course->id,
             'career_id' => $career->id,
             'name' => 'INF-1A',
@@ -82,7 +142,25 @@ class DatabaseSeeder extends Seeder
             'status' => 'active',
         ]);
 
+        $professor = Professor::create([
+            'institution_id' => $institution->id,
+            'campus_id' => $campus->id,
+            'faculty_id' => $faculty->id,
+            'department_id' => $department->id,
+            'subject_id' => $subjects->last()->id,
+            'professor_code' => 'PROF-0001',
+            'first_name' => 'Carlos',
+            'last_name' => 'Rodriguez',
+            'email' => 'carlos.rodriguez@example.edu',
+            'status' => 'active',
+        ]);
+
         $offering = SubjectOffering::create([
+            'institution_id' => $institution->id,
+            'campus_id' => $campus->id,
+            'faculty_id' => $faculty->id,
+            'department_id' => $department->id,
+            'modality_id' => $modality->id,
             'course_id' => $course->id,
             'career_id' => $career->id,
             'group_id' => $group->id,
@@ -158,15 +236,6 @@ class DatabaseSeeder extends Seeder
             'document_number' => '00010112345',
             'email' => 'ana.perez@example.edu',
             'admission_date' => '2026-09-01',
-            'status' => 'active',
-        ]);
-
-        $professor = Professor::create([
-            'subject_id' => $subjects->last()->id,
-            'professor_code' => 'PROF-0001',
-            'first_name' => 'Carlos',
-            'last_name' => 'Rodriguez',
-            'email' => 'carlos.rodriguez@example.edu',
             'status' => 'active',
         ]);
 
@@ -292,7 +361,7 @@ class DatabaseSeeder extends Seeder
             'status' => 'published',
         ]);
 
-        $this->seedUsers($roles, $student, $professor);
+        $this->seedUsers($roles, $student, $professor, $institution, $campus);
     }
 
     private function seedPermissions()
@@ -397,7 +466,7 @@ class DatabaseSeeder extends Seeder
         });
     }
 
-    private function seedUsers($roles, Student $student, Professor $professor): void
+    private function seedUsers($roles, Student $student, Professor $professor, Institution $institution, Campus $campus): void
     {
         $users = [
             ['Sistema Admin', 'admin@example.edu', ['super_admin'], null, null],
@@ -409,6 +478,8 @@ class DatabaseSeeder extends Seeder
 
         foreach ($users as [$name, $email, $roleCodes, $studentId, $professorId]) {
             $user = User::create([
+                'institution_id' => $institution->id,
+                'campus_id' => $campus->id,
                 'name' => $name,
                 'email' => $email,
                 'password' => 'password',

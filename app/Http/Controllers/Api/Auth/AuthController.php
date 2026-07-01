@@ -49,7 +49,7 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         return response()->json([
-            'user' => $this->userPayload($request->user()->load('roles.permissions', 'student', 'professor')),
+            'user' => $this->userPayload($request->user()->load('roles.permissions', 'student', 'professor', 'institution', 'campus')),
         ]);
     }
 
@@ -67,6 +67,8 @@ class AuthController extends Controller
             'email' => ['required', 'email', 'max:255', Rule::unique('users')],
             'password' => ['required', 'string', 'min:8'],
             'status' => ['nullable', 'string', 'max:30'],
+            'institution_id' => ['nullable', 'exists:institutions,id'],
+            'campus_id' => ['nullable', 'exists:campuses,id'],
             'student_id' => ['nullable', 'exists:students,id'],
             'professor_id' => ['nullable', 'exists:professors,id'],
             'roles' => ['required', 'array', 'min:1'],
@@ -78,6 +80,8 @@ class AuthController extends Controller
             'email' => $validated['email'],
             'password' => $validated['password'],
             'status' => $validated['status'] ?? 'active',
+            'institution_id' => $validated['institution_id'] ?? null,
+            'campus_id' => $validated['campus_id'] ?? null,
             'student_id' => $validated['student_id'] ?? null,
             'professor_id' => $validated['professor_id'] ?? null,
         ]);
@@ -95,6 +99,8 @@ class AuthController extends Controller
             'name' => $user->name,
             'email' => $user->email,
             'status' => $user->status,
+            'institution_id' => $user->institution_id,
+            'campus_id' => $user->campus_id,
             'student_id' => $user->student_id,
             'professor_id' => $user->professor_id,
             'roles' => $user->roles->pluck('code')->values(),

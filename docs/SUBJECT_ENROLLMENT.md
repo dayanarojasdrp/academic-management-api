@@ -62,6 +62,11 @@ Example:
 {
   "course_id": 1,
   "career_id": 1,
+  "institution_id": 1,
+  "campus_id": 1,
+  "faculty_id": 1,
+  "department_id": 1,
+  "modality_id": 1,
   "group_id": 1,
   "curriculum_plan_id": 1,
   "subject_id": 2,

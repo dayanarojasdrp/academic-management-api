@@ -15,12 +15,16 @@ class UserManagementController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = User::query()
-            ->with('roles:id,code,name')
+            ->with(['roles:id,code,name', 'institution:id,code,name', 'campus:id,code,name'])
             ->orderBy('name')
             ->orderBy('id');
 
         ApiQuery::applyLike($query, $request, 'search', ['name', 'email']);
-        ApiQuery::applyEquals($query, $request, ['status' => 'status']);
+        ApiQuery::applyEquals($query, $request, [
+            'status' => 'status',
+            'institution_id' => 'institution_id',
+            'campus_id' => 'campus_id',
+        ]);
 
         if ($request->filled('role')) {
             $query->whereHas('roles', fn ($query) => $query->where('code', $request->query('role')));
@@ -32,7 +36,7 @@ class UserManagementController extends Controller
     public function show(User $user): JsonResponse
     {
         return response()->json([
-            'user' => $user->load('roles.permissions', 'student', 'professor'),
+            'user' => $user->load('roles.permissions', 'student', 'professor', 'institution', 'campus'),
         ]);
     }
 
@@ -43,6 +47,8 @@ class UserManagementController extends Controller
             'email' => ['sometimes', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'password' => ['sometimes', 'string', 'min:8'],
             'status' => ['sometimes', 'string', 'max:30'],
+            'institution_id' => ['nullable', 'exists:institutions,id'],
+            'campus_id' => ['nullable', 'exists:campuses,id'],
             'student_id' => ['nullable', 'exists:students,id'],
             'professor_id' => ['nullable', 'exists:professors,id'],
             'roles' => ['sometimes', 'array', 'min:1'],
@@ -58,7 +64,7 @@ class UserManagementController extends Controller
         }
 
         return response()->json([
-            'user' => $user->fresh()->load('roles.permissions', 'student', 'professor'),
+            'user' => $user->fresh()->load('roles.permissions', 'student', 'professor', 'institution', 'campus'),
         ]);
     }
 

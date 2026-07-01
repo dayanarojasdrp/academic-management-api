@@ -50,6 +50,11 @@ DELETE /api/{resource}/{id}
 Recursos:
 
 ```text
+institutions
+campuses
+faculties
+departments
+modalities
 careers
 courses
 subjects
@@ -63,6 +68,95 @@ subject-enrollments
 grades
 ```
 
+## Estructura institucional
+
+Estas rutas permiten vender/operar la plataforma para varias instituciones, sedes, facultades, departamentos y modalidades.
+
+```text
+GET/POST/PATCH/DELETE /api/institutions
+GET/POST/PATCH/DELETE /api/campuses
+GET/POST/PATCH/DELETE /api/faculties
+GET/POST/PATCH/DELETE /api/departments
+GET/POST/PATCH/DELETE /api/modalities
+```
+
+Ejemplo de institucion:
+
+```json
+{
+  "code": "CME",
+  "name": "Centro Misionero Escambray",
+  "legal_name": "Centro Misionero Escambray",
+  "tax_identifier": "RUC/NIT/RFC opcional",
+  "country": "Cuba",
+  "timezone": "America/Havana",
+  "status": "active",
+  "settings": {
+    "academic_year_label": "Curso"
+  }
+}
+```
+
+Ejemplo de sede:
+
+```json
+{
+  "institution_id": 1,
+  "code": "MAIN",
+  "name": "Sede Central",
+  "city": "La Habana",
+  "state": null,
+  "country": "Cuba",
+  "address": "Opcional",
+  "status": "active"
+}
+```
+
+Ejemplo de facultad/departamento:
+
+```json
+{
+  "institution_id": 1,
+  "campus_id": 1,
+  "code": "FING",
+  "name": "Facultad de Ingenieria",
+  "status": "active"
+}
+```
+
+```json
+{
+  "institution_id": 1,
+  "faculty_id": 1,
+  "campus_id": 1,
+  "code": "DSW",
+  "name": "Departamento de Software",
+  "status": "active"
+}
+```
+
+Ejemplo de modalidad:
+
+```json
+{
+  "institution_id": 1,
+  "code": "PRESENCIAL",
+  "name": "Presencial",
+  "description": "Clases en sede fisica",
+  "requires_classroom": true,
+  "requires_online_platform": false,
+  "status": "active"
+}
+```
+
+Las entidades academicas principales pueden recibir estos ids para segmentar datos:
+
+- carreras: `institution_id`, `faculty_id`, `department_id`, `modality_id`
+- cursos: `institution_id`, `campus_id`
+- grupos: `institution_id`, `campus_id`, `faculty_id`, `department_id`, `modality_id`
+- profesores: `institution_id`, `campus_id`, `faculty_id`, `department_id`
+- ofertas academicas: `institution_id`, `campus_id`, `faculty_id`, `department_id`, `modality_id`
+
 ## Carreras
 
 Ruta CRUD: `/api/careers`
@@ -71,6 +165,10 @@ Campos:
 
 ```json
 {
+  "institution_id": 1,
+  "faculty_id": 1,
+  "department_id": 1,
+  "modality_id": 1,
   "name": "Ingenieria Informatica",
   "abbreviation": "INF",
   "description": "Opcional"
