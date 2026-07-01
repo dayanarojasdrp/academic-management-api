@@ -17,9 +17,12 @@ class SubjectEnrollment extends Model
         'enrollment_id',
         'student_id',
         'subject_id',
+        'subject_offering_id',
+        'curriculum_plan_id',
         'course_id',
         'career_id',
         'group_id',
+        'semester',
         'enrolled_at',
         'completed_at',
         'status',
@@ -39,6 +42,16 @@ class SubjectEnrollment extends Model
     public function subject(): BelongsTo
     {
         return $this->belongsTo(Subject::class);
+    }
+
+    public function subjectOffering(): BelongsTo
+    {
+        return $this->belongsTo(SubjectOffering::class);
+    }
+
+    public function curriculumPlan(): BelongsTo
+    {
+        return $this->belongsTo(CurriculumPlan::class);
     }
 
     public function course(): BelongsTo
