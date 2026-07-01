@@ -56,6 +56,7 @@ Todos los recursos tienen operaciones REST: `GET`, `POST`, `GET /{id}`, `PUT/PAT
 La guia completa para frontend esta en [docs/API.md](docs/API.md).
 Las decisiones de arquitectura y rendimiento estan en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 La autenticacion, roles y permisos estan en [docs/AUTHORIZATION.md](docs/AUTHORIZATION.md).
+El patron de Form Requests y Policies esta en [docs/REQUESTS_POLICIES.md](docs/REQUESTS_POLICIES.md).
 El flujo financiero de produccion esta en [docs/FINANCE.md](docs/FINANCE.md).
 La validacion de ofertas y matricula de asignaturas esta en [docs/SUBJECT_ENROLLMENT.md](docs/SUBJECT_ENROLLMENT.md).
 El flujo de calificaciones, actas y cierre academico esta en [docs/GRADEBOOK.md](docs/GRADEBOOK.md).

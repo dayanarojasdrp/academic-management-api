@@ -195,6 +195,8 @@ support.impersonate
 
 The frontend should not hardcode what each user can do based only on role name. It should use the `permissions` array returned by `/api/auth/login` or `/api/auth/me`.
 
+Route permissions are only the first authorization layer. Sensitive resources also use Laravel Policies for contextual checks such as "own student record", "assigned professor grade sheet" and "locked grade change approval". The Form Request and Policy pattern is documented in [REQUESTS_POLICIES.md](REQUESTS_POLICIES.md).
+
 ## Demo users
 
 Seeded users use password:
